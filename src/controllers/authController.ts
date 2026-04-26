@@ -2,9 +2,14 @@ import {Request,Response} from "express";
 import bcrypt from "bcrypt";
 import {User} from "../models/user";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
+import { LoginSchema,zodError } from "../validators/auth";
 export const login=async(req:Request,res:Response)=>{
 try{
-const {email,password}=req.body;
+  const parsed=LoginSchema.safeParse(req.body);
+if(!parsed.success) {
+  const tree=zodError(parsed.error);
+  return res.status(400).json({errors:tree,message:"Validation failed"});}
+const {email,password}=parsed.data;
 const user=await User.findOne({email});
 if(!user) return res.status(400).json({message:"Email doesn't exist"});
 if(!user.is_active) return res.status(403).json({message:"Account is inactive"});

@@ -17,8 +17,10 @@ name:{type:String,required:true},
 email:{type:String,required:true,unique:true},
 password:{type:String,required:true},
 phone:{type:String},
-role:{type:Types.ObjectId,ref:'Role'},
-is_active:{type:Boolean,default:true}
+role:{type:Types.ObjectId,ref:'Role',required:true},
+is_active:{type:Boolean,default:true},
+refresh_token:{type:String},
+verified_date:{type:Date},
 },{
     timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}
 });
