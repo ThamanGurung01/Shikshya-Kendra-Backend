@@ -10,7 +10,7 @@ for (const key of requiredEnv) {
     throw new Error(`${key} is not defined in environment variables`);
   }
 }
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 const startServer=async()=>{
 try {
   await connectDB();
