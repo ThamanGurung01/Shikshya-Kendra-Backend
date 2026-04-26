@@ -40,7 +40,7 @@ try {
     const newRefreshToken=generateRefreshToken(decoded);
     user.refresh_token=newRefreshToken;
     await user.save();
-    resCookie(res,refreshToken,token);
+    resCookie(res,newRefreshToken,token);
     res.json({message:"Access token refreshed"});
 } catch (error) {
     res.status(401).json({message:"Invalid refresh token"});
