@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import {User} from "../models/user";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
 import { LoginSchema,zodError } from "../validators/auth";
+import { resCookie } from "../utils/cookie";
 export const login=async(req:Request,res:Response)=>{
 try{
   const parsed=LoginSchema.safeParse(req.body);
@@ -19,17 +20,7 @@ const token=generateAccessToken(user._id.toString());
 const refreshToken=generateRefreshToken(user._id.toString());
 user.refresh_token=refreshToken;
 await user.save();
-const NodeEnvironment=(process.env.NODE_ENV||'development')==='production'?true:false;
-res.cookie('refreshToken',refreshToken,{
-    httpOnly:true,
-    secure:NodeEnvironment,
-    sameSite:NodeEnvironment?'strict':'lax',
-})
-res.cookie('accessToken',token,{
-    httpOnly:false,
-    secure:NodeEnvironment,
-    sameSite:NodeEnvironment?'strict':'lax',
-})
+resCookie(res,refreshToken,token);
 res.json({userData:{id:user._id,email:user.email,role:user.role,verified_date:user.verified_date},message:"Login successful"});
 }catch(error){  
 res.status(500).json({message:"Server error",error});
@@ -49,17 +40,7 @@ try {
     const newRefreshToken=generateRefreshToken(decoded);
     user.refresh_token=newRefreshToken;
     await user.save();
-    const NodeEnvironment = (process.env.NODE_ENV || "development") === "production";
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: NodeEnvironment,
-      sameSite: NodeEnvironment ? "strict" : "lax",
-    });
-    res.cookie("accessToken", token, {
-      httpOnly: false,
-      secure: NodeEnvironment,
-      sameSite: NodeEnvironment ? "strict" : "lax",
-    });
+    resCookie(res,refreshToken,token);
     res.json({message:"Access token refreshed"});
 } catch (error) {
     res.status(401).json({message:"Invalid refresh token"});
