@@ -24,7 +24,6 @@ export const userData = async () => {
           role: superadminRole._id,
           verified_date: new Date(),
           is_active: true,
-          isActive: true,
         },
       },
       {

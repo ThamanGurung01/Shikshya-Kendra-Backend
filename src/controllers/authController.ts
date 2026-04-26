@@ -37,6 +37,7 @@ try {
     if(!refreshToken) return res.status(401).json({message:"No refresh token provided"});
     if(!process.env.REFRESH_TOKEN_SECRET) throw new Error('REFRESH_TOKEN_SECRET is not defined in environment variables');
     const decoded=verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    if(!decoded) return res.status(401).json({message:"Invalid refresh token"});
     const user=await User.findById(decoded);
     if(!user||user.refresh_token!==refreshToken) return res.status(401).json({message:"Invalid refresh token"});
     const token=generateAccessToken(decoded);
@@ -60,7 +61,8 @@ try {
 }
 }
 export const logout=async(req:Request,res:Response)=>{
-const token = req.cookies.refreshToken;
+try {
+  const token = req.cookies.refreshToken;
 
   if (token) {
     if(!process.env.REFRESH_TOKEN_SECRET) throw new Error('REFRESH_TOKEN_SECRET is not defined in environment variables');
@@ -75,4 +77,7 @@ const token = req.cookies.refreshToken;
 res.clearCookie('refreshToken');
 res.clearCookie('accessToken');
 res.json({message:"Logged out successfully"});
+} catch (error) {
+  res.status(500).json({message:"Server error", error});
+}
 }
