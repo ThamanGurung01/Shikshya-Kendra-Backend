@@ -44,6 +44,11 @@ try {
     user.refresh_token=newRefreshToken;
     await user.save();
     const NodeEnvironment = (process.env.NODE_ENV || "development") === "production";
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: NodeEnvironment,
+      sameSite: NodeEnvironment ? "strict" : "lax",
+    });
     res.cookie("accessToken", token, {
       httpOnly: false,
       secure: NodeEnvironment,
