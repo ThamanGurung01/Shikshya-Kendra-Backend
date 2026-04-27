@@ -11,8 +11,8 @@ app.use(cors({
 }))
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs));
-app.use('/auth', authRouter);
+app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs));
+app.use('/api/v1/auth', authRouter);
 app.get('/', (req, res) => {
   res.send('Hello, World!');
 });

@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { login, refreshToken, logout } from '../controllers/authController';
+import { authCheck, login, logout } from '../controllers/authController';
 import { authenticate } from '../middlewares/authMiddleware';
 export const authRouter=Router();
 /**
@@ -15,11 +15,11 @@ export const authRouter=Router();
  *         email:
  *           type: string
  *           format: email
- *           example: user@example.com
+ *           example: superadmin@gmail.com
  *         password:
  *           type: string
  *           minLength: 6
- *           example: secret123
+ *           example: password123
  *     AuthUserData:
  *       type: object
  *       properties:
@@ -51,7 +51,7 @@ export const authRouter=Router();
  *           type: string
  *           example: Logged out successfully
  *
- * /auth/login:
+ * /api/v1/auth/login:
  *  post:
  *   summary: User login
  *   tags:
@@ -92,34 +92,101 @@ export const authRouter=Router();
  *            type: string
  *            example: Invalid email or password
  *
- * /auth/refresh-token:
- *  post:
- *   summary: Refresh access token
+ * /api/v1/auth/me:
+ *  get:
+ *   summary: Get authenticated user
  *   tags:
  *     - Auth
+ *   security:
+ *     - bearerAuth: []
  *   responses:
  *    200:
- *     description: Access token refreshed
+ *     description: Authenticated user details
  *     content:
  *      application/json:
  *       schema:
  *        type: object
  *        properties:
- *          message:
+ *         success:
+ *          type: boolean
+ *          example: true
+ *         data:
+ *          type: object
+ *          properties:
+ *           _id:
  *            type: string
- *            example: Access token refreshed
+ *            example: 680cf4d5e6e79f54ea8e8c98
+ *           name:
+ *            type: string
+ *            example: Super Admin
+ *           email:
+ *            type: string
+ *            format: email
+ *            example: superadmin@gmail.com
+ *           phone:
+ *            type: string
+ *            nullable: true
+ *            example: 9800000000
+ *           role:
+ *            type: string
+ *            example: 680cf4d5e6e79f54ea8e8c97
+ *           is_active:
+ *            type: boolean
+ *            example: true
+ *           verified_date:
+ *            type: string
+ *            nullable: true
+ *            example: 2026-04-27T10:40:00.000Z
+ *           createdAt:
+ *            type: string
+ *            example: 2026-04-01T12:00:00.000Z
+ *           updatedAt:
+ *            type: string
+ *            example: 2026-04-27T10:45:00.000Z
+ *         message:
+ *          type: string
+ *          example: Authenticated
  *    401:
- *     description: Invalid refresh token
+ *     description: Unauthorized
  *     content:
  *      application/json:
  *       schema:
  *        type: object
  *        properties:
- *          message:
- *            type: string
- *            example: Invalid refresh token
- *
- * /auth/logout:
+ *         success:
+ *          type: boolean
+ *          example: false
+ *         message:
+ *          type: string
+ *          example: Unauthorized
+ *    404:
+ *     description: User not found
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         success:
+ *          type: boolean
+ *          example: false
+ *         message:
+ *          type: string
+ *          example: User not found
+ *    500:
+ *     description: Server error
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         success:
+ *          type: boolean
+ *          example: false
+ *         message:
+ *          type: string
+ *          example: Server error
+ * 
+ * /api/v1/auth/logout:
  *  post:
  *   summary: Logout current user
  *   tags:
@@ -143,5 +210,5 @@ export const authRouter=Router();
  *            example: Server error
  */
 authRouter.post('/login',login);
-authRouter.post('/refresh-token',refreshToken);
+authRouter.get('/me',authenticate,authCheck);
 authRouter.post('/logout',logout);
