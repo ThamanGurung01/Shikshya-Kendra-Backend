@@ -20,7 +20,7 @@ next();
 }
 }
 
-const refreshToken=async(req:Request,res:Response,next:NextFunction)=>{
+const refreshToken=async(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try {
     const refreshToken=req.cookies.refreshToken;
     if(!refreshToken) return res.status(401).json({success:false,message:REFRESH_FAILED_MESSAGE});
@@ -30,6 +30,7 @@ try {
     const user=await User.findById(decoded);
     if(!user||user.refresh_token!==refreshToken) return res.status(401).json({success:false,message:REFRESH_FAILED_MESSAGE});
     const token=generateAccessToken(decoded);
+    req.userId=decoded;
     resCookie(res,"",token);
     next();
 } catch (error) {
