@@ -11,7 +11,7 @@ if(refreshToken){
 }
 if(token){
     res.cookie('accessToken',token,{
-        httpOnly:false,
+        httpOnly:true,
         secure:NodeEnvironment,
         sameSite:NodeEnvironment?'strict':'lax',
         maxAge:15*60*1000,
