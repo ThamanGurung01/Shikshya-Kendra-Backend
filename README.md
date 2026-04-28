@@ -19,7 +19,7 @@ Backend for the Shikshya Kendra project, built with Express, TypeScript, and Mon
 Create a `.env` file in the project root with:
 
 ```env
-PORT=8000
+PORT=8080
 MONGO_URI=your-mongodb-connection-string
 ACCESS_TOKEN_SECRET=your-access-token-secret
 REFRESH_TOKEN_SECRET=your-refresh-token-secret
