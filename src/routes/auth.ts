@@ -129,7 +129,7 @@ export const authRouter=Router();
  *            example: 9800000000
  *           role:
  *            type: string
- *            example: 680cf4d5e6e79f54ea8e8c97
+ *            example: admin
  *           is_active:
  *            type: boolean
  *            example: true
