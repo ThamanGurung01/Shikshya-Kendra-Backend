@@ -1,6 +1,5 @@
 import {Schema,model,Types} from 'mongoose';
 export interface IUser{
-    _id:Types.ObjectId;
     name:string;
     email:string;
     password:string;
@@ -12,15 +11,7 @@ export interface IUser{
     updatedAt:Date;
     deletedAt?:Date;
 }
-// roles 
-// superadmin
-// owner
-// admin
-// teacher
-// student
-// parent
-// librarian
-// accountant
+
 const userSchema=new Schema<IUser>({
 name:{type:String,required:true},
 email:{type:String,required:true,unique:true},

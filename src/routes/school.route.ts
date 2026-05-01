@@ -1,0 +1,12 @@
+import {Router} from 'express';
+import { authenticate } from '../middlewares/auth.middleware';
+import { createSchool, hardDeleteSchool,getAllSchools,getSchoolById,updateSchool,deleteSchool } from '../controllers/school.controller';
+import { authorize } from '../middlewares/role.middleware';
+import Role from '../utils/role.util';
+export const schoolRouter=Router();
+schoolRouter.post('/',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),createSchool);
+schoolRouter.get('/',authenticate,getAllSchools);
+schoolRouter.get('/:id',authenticate,getSchoolById);
+schoolRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),updateSchool);
+schoolRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),deleteSchool);
+schoolRouter.post('/:id/hard-delete',authenticate,authorize([Role.SUPERADMIN]),hardDeleteSchool);
