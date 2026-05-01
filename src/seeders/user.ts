@@ -16,7 +16,6 @@ export const userData = async () => {
           email: "superadmin@gmail.com",
           password: hashedPassword,
           role: "superadmin",
-          verified_date: new Date(),
           is_active: true,
         },
       },

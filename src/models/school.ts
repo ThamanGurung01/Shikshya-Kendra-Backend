@@ -3,18 +3,32 @@ export interface ISchool{
     _id:Types.ObjectId;
     name:string;
     address:string;
-    phone?:string;
-    email?:string;
-    kyc_files?:string[];
-    created_at:Date;
-    updated_at:Date;
+    contact:string;
+    email:string;
+    owner_id?:Types.ObjectId;
+    kyc_files?:Array<{
+    file_name:string;
+    file_url:string;
+    }>;
+    verifiedAt?:Date;
+    createdAt:Date;
+    updatedAt:Date;
+    deletedAt?:Date;
 }
 const schoolSchema=new Schema<ISchool>({
     name:{type:String,required:true},
-    address:{type:String,required:true},
-    phone:{type:String},
-    email:{type:String}
+    address:String,
+    contact:String,
+    email:String,
+    owner_id:{type:Types.ObjectId,ref:'User'},
+    kyc_files:[{
+    file_name:String,
+    file_url:String
+    }],
+    verifiedAt:Date,
+    deletedAt:Date
+
 },{
-    timestamps:{createdAt:'created_at',updatedAt:'updated_at'}
+    timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}
 });
 export const School=model<ISchool>('School',schoolSchema);

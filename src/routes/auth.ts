@@ -32,10 +32,6 @@ export const authRouter=Router();
  *         role:
  *           type: string
  *           example: admin
- *         verified_date:
- *           type: string
- *           nullable: true
- *           example: 2026-04-27T10:40:00.000Z
  *     ValidationErrorResponse:
  *       type: object
  *       properties:
@@ -123,20 +119,12 @@ export const authRouter=Router();
  *            type: string
  *            format: email
  *            example: superadmin@gmail.com
- *           phone:
- *            type: string
- *            nullable: true
- *            example: 9800000000
  *           role:
  *            type: string
  *            example: admin
  *           is_active:
  *            type: boolean
  *            example: true
- *           verified_date:
- *            type: string
- *            nullable: true
- *            example: 2026-04-27T10:40:00.000Z
  *           createdAt:
  *            type: string
  *            example: 2026-04-01T12:00:00.000Z

@@ -23,7 +23,7 @@ const refreshToken=generateRefreshToken(user._id.toString());
 user.refresh_token=refreshToken;
 await user.save();
 resCookie(res,refreshToken,token);
-return res.json({success:true,data:{id:user._id,email:user.email,role:user.role,verified_date:user.verified_date},message:"Login successful"});
+return res.json({success:true,data:{id:user._id,email:user.email,role:user.role},message:"Login successful"});
 }catch(error){  
   console.error("Login error:", error);
 return res.status(500).json({success:false,message:"Authentication failed"});
