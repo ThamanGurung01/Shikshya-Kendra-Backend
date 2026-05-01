@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import {userData} from "../seeders/user";
+import {userData} from "../seeders/user.seeder";
 export const connectDB=async()=>{
     try{
 const MONGO_URI=process.env.MONGO_URI||"mongodb://localhost:27017/school_management";  

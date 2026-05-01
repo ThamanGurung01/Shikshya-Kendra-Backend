@@ -1,9 +1,9 @@
 import express from 'express';
-import { authRouter } from './routes/auth';
+import { authRouter } from './routes/auth.route';
 import cookieParser from 'cookie-parser';
 import cors from "cors";
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocs from './swagger';
+import swaggerDocs from './configs/swagger';
 const app = express();
 app.use(cors({
   origin: process.env.FRONTEND_URL??'http://localhost:3000',

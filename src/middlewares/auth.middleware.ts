@@ -1,6 +1,6 @@
-import { User } from '../models/user';
-import { resCookie } from '../utils/cookie';
-import {generateAccessToken, verifyToken } from '../utils/token';
+import { User } from '../models/user.model';
+import { resCookie } from '../utils/cookie.util';
+import {generateAccessToken, verifyToken } from '../utils/token.util';
 import {Request,Response,NextFunction} from "express";
 const REFRESH_FAILED_MESSAGE = "Invalid refresh token";
 export interface AuthenticatedRequest extends Request {

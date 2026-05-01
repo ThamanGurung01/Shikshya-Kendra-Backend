@@ -1,6 +1,6 @@
 import {Router} from 'express';
-import { authCheck, login, logout } from '../controllers/authController';
-import { authenticate } from '../middlewares/authMiddleware';
+import { authCheck, login, logout } from '../controllers/auth.controller';
+import { authenticate } from '../middlewares/auth.middleware';
 export const authRouter=Router();
 /**
  * @swagger

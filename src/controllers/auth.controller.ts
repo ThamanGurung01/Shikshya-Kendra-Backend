@@ -1,10 +1,10 @@
 import {Request,Response} from "express";
 import bcrypt from "bcrypt";
-import {User} from "../models/user";
-import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
-import { LoginSchema,zodError } from "../validators/auth";
-import { resCookie } from "../utils/cookie";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import {User} from "../models/user.model";
+import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token.util";
+import { LoginSchema,zodError } from "../validators/auth.validator";
+import { resCookie } from "../utils/cookie.util";
+import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const login=async(req:Request,res:Response)=>{
