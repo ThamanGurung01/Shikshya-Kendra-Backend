@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import { authCheck, login, logout } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
-export const authRouter=Router();
+const authRouter=Router();
 /**
  * @swagger
  * components:
@@ -200,3 +200,4 @@ export const authRouter=Router();
 authRouter.post('/login',login);
 authRouter.get('/me',authenticate,authCheck);
 authRouter.post('/logout',logout);
+export default authRouter;
