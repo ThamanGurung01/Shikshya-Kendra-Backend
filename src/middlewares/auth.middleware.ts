@@ -1,6 +1,6 @@
-import { User } from '../models/user';
-import { resCookie } from '../utils/cookie';
-import {generateAccessToken, verifyToken } from '../utils/token';
+import { User } from '../models/user.model';
+import { resCookie } from '../utils/cookie.util';
+import {generateAccessToken, verifyToken } from '../utils/token.util';
 import {Request,Response,NextFunction} from "express";
 const REFRESH_FAILED_MESSAGE = "Invalid refresh token";
 export interface AuthenticatedRequest extends Request {
@@ -9,7 +9,7 @@ export interface AuthenticatedRequest extends Request {
 export const authenticate=(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try{
 const token=req.cookies.accessToken;
-if(!token) return res.status(401).json({success:false,message:"Access token not provided"});
+if(!token) return refreshToken(req,res,next);
 if(!process.env.ACCESS_TOKEN_SECRET) throw new Error('ACCESS_TOKEN_SECRET is not defined in environment variables');
 const decoded=verifyToken(token, process.env.ACCESS_TOKEN_SECRET);
 if(!decoded) return res.status(401).json({success:false,message:"Invalid access token"});

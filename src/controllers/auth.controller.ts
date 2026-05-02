@@ -1,10 +1,10 @@
 import {Request,Response} from "express";
 import bcrypt from "bcrypt";
-import {User} from "../models/user";
-import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
-import { LoginSchema,zodError } from "../validators/auth";
-import { resCookie } from "../utils/cookie";
-import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import {User} from "../models/user.model";
+import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token.util";
+import { LoginSchema,zodError } from "../validators/auth.validator";
+import { resCookie } from "../utils/cookie.util";
+import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const login=async(req:Request,res:Response)=>{
@@ -23,7 +23,7 @@ const refreshToken=generateRefreshToken(user._id.toString());
 user.refresh_token=refreshToken;
 await user.save();
 resCookie(res,refreshToken,token);
-return res.json({success:true,data:{id:user._id,email:user.email,role:user.role,verified_date:user.verified_date},message:"Login successful"});
+return res.json({success:true,data:{id:user._id,email:user.email,role:user.role},message:"Login successful"});
 }catch(error){  
   console.error("Login error:", error);
 return res.status(500).json({success:false,message:"Authentication failed"});

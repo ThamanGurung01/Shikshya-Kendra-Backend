@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 
-import { User } from "../models/user";
+import { User } from "../models/user.model";
 
 dotenv.config();
 
@@ -16,7 +16,6 @@ export const userData = async () => {
           email: "superadmin@gmail.com",
           password: hashedPassword,
           role: "superadmin",
-          verified_date: new Date(),
           is_active: true,
         },
       },
