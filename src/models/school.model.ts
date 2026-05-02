@@ -10,25 +10,24 @@ export interface ISchool{
     file_name:string;
     file_url:string;
     }>;
-    verifiedAt?:Date;
+    verifiedAt?:Date|null;
     createdAt:Date;
     updatedAt:Date;
-    deletedAt?:Date;
+    deletedAt?:Date|null;
 }
 const schoolSchema=new Schema<ISchool>({
     name:{type:String,required:true},
     address:{type:String,required:true},
     contact:{type:String,required:true},
-    email:{type:String,required:true},
+    email:{type:String,required:true,unique:true,trim:true,lowercase:true},
     website:String,
     owner_id:{type:Types.ObjectId,ref:'User',default:null},
     kyc_files:[{
     file_name:String,
     file_url:String
     }],
-    verifiedAt:Date,
-    deletedAt:Date
-
+    verifiedAt:{type:Date,default:null},
+    deletedAt:{type:Date,default:null}
 },{
     timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}
 });

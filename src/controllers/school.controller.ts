@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
 import { SchoolSchema } from '../validators/school.validator';
 import { zodError } from '../validators/auth.validator';
+import { Types } from 'mongoose';
 //create school
 export const createSchool=async(req:Request,res:Response)=>{
 try{
@@ -21,6 +22,7 @@ res.status(500).json({success:false,message:"Internal Server Error"});
 export const getAllSchools=async(_:Request,res:Response)=>{
 try{
     const schools=await schoolService.getAllSchools();
+    if(schools.length===0) return res.status(404).json({success:false,message:"No schools found"});
     res.status(200).json({ success: true, data: schools, message: "Schools retrieved successfully" });
 }catch(error){
     console.error(error);
@@ -31,6 +33,9 @@ export const getSchoolById=async(req:Request,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return res.status(400).json({success:false,message:"ID is required"});
+    if (!Types.ObjectId.isValid(id)) {
+    return res.status(400).json({success:false,message:"Invalid ID format"});
+    }
     const school=await schoolService.getSchoolById(id);
     if(!school) return res.status(404).json({success:false,message:"School not found"});
     res.status(200).json({ success: true, data: school, message: "School retrieved successfully" });
@@ -43,7 +48,10 @@ export const updateSchool=async(req:Request,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return res.status(400).json({success:false,message:"ID is required"});
-    const parsed=SchoolSchema.safeParse(req.body);
+    if (!Types.ObjectId.isValid(id)) {
+    return res.status(400).json({success:false,message:"Invalid ID format"});
+    }
+        const parsed=SchoolSchema.safeParse(req.body);
 if(!parsed.success) {
   const tree=zodError(parsed.error);
   return res.status(400).json({success:false,errors:tree,message:"Validation failed"});}
@@ -55,35 +63,14 @@ if(!parsed.success) {
     console.error(error);
 res.status(500).json({success:false,message:"Internal Server Error"});
 }}
-//soft delete school
-export const deleteSchool=async(req:Request,res:Response)=>{
-try{
-    const {id}=req.params;
-    if(!id || Array.isArray(id)) return res.status(400).json({success:false,message:"ID is required"});
-    const school=await schoolService.deleteSchool(id);
-    if(!school) return res.status(404).json({success:false,message:"School not found"});
-    res.status(200).json({ success: true, data: school, message: "School deleted successfully" });
-}catch(error){
-    console.error(error);
-res.status(500).json({success:false,message:"Internal Server Error"});
-}}
-//restore school
-export const restoreSchool=async(req:Request,res:Response)=>{
-try{
-    const {id}=req.params;
-    if(!id || Array.isArray(id)) return res.status(400).json({success:false,message:"ID is required"});
-    const school=await schoolService.restoreSchool(id);
-    if(!school) return res.status(404).json({success:false,message:"School not found"});
-    res.status(200).json({ success: true, data: school, message: "School restored successfully" });
-}catch(error){
-    console.error(error);
-res.status(500).json({success:false,message:"Internal Server Error"});
-}}
 //hard delete school
 export const hardDeleteSchool=async(req:Request,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return res.status(400).json({success:false,message:"ID is required"});
+    if (!Types.ObjectId.isValid(id)) {
+    return res.status(400).json({success:false,message:"Invalid ID format"});
+    }
     const school=await schoolService.hardDeleteSchool(id);
     if(!school) return res.status(404).json({success:false,message:"School not found"});
     res.status(200).json({ success: true, data: school, message: "School permanently deleted successfully" });

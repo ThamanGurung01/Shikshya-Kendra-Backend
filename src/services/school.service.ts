@@ -15,15 +15,7 @@ export const getSchoolById=async(id:string)=>{
 }
 //update
 export const updateSchool=async(id:string,data:ISchoolInput)=>{
-    return await School.findByIdAndUpdate(id,data,{new:true});
-}
-// soft delete
-export const deleteSchool=async(id:string)=>{
-    return await School.findByIdAndUpdate(id,{deletedAt:new Date()},{new:true});
-}
-// restore
-export const restoreSchool=async(id:string)=>{
-    return await School.findByIdAndUpdate(id,{deletedAt:null},{new:true});
+    return await School.findByIdAndUpdate(id,data,{returnDocument:'after'});
 }
 // hard delete
 export const hardDeleteSchool=async(id:string)=>{

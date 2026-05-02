@@ -9,7 +9,7 @@ export interface AuthenticatedRequest extends Request {
 export const authenticate=(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try{
 const token=req.cookies.accessToken;
-if(!token) return res.status(401).json({success:false,message:"Access token not provided"});
+if(!token) return refreshToken(req,res,next);
 if(!process.env.ACCESS_TOKEN_SECRET) throw new Error('ACCESS_TOKEN_SECRET is not defined in environment variables');
 const decoded=verifyToken(token, process.env.ACCESS_TOKEN_SECRET);
 if(!decoded) return res.status(401).json({success:false,message:"Invalid access token"});
