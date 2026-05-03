@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
 import { SchoolSchema } from '../validators/school.validator';
-import { zodError } from '../validators/auth.validator';
+import { zodError } from '../validators/school.validator';
 import { Types } from 'mongoose';
 //create school
 export const createSchool=async(req:Request,res:Response)=>{
