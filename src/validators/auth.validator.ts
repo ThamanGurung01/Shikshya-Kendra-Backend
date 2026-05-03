@@ -5,5 +5,5 @@ export const LoginSchema=z.object({
 })
 export const zodError=(parsedError:ZodError)=>{
     const tree=z.treeifyError(parsedError);
-    return tree;
+    return tree.errors;
 }
