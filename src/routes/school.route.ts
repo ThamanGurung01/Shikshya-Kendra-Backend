@@ -209,7 +209,6 @@ import Role from '../utils/role.util';
  *         description: Unauthorized
  *       403:
  *         description: Forbidden
- * /api/v1/school/{id}/hard-delete:
  *   delete:
  *     summary: Permanently delete a school
  *     tags:
