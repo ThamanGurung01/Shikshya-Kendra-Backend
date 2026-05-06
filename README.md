@@ -24,6 +24,7 @@ MONGO_URI=your-mongodb-connection-string
 ACCESS_TOKEN_SECRET=your-access-token-secret
 REFRESH_TOKEN_SECRET=your-refresh-token-secret
 FRONTEND_URL=http://localhost:3000
+BCRYPT_SALT_ROUNDS=10
 ```
 
 ## Setup

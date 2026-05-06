@@ -5,6 +5,7 @@ import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils
 import { LoginSchema,zodError } from "../validators/auth.validator";
 import { resCookie } from "../utils/cookie.util";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
+import { comparePassword } from "../utils/hash.util";
 const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const login=async(req:Request,res:Response)=>{
@@ -16,7 +17,7 @@ if(!parsed.success) {
 const {email,password}=parsed.data;
 const user=await User.findOne({email});
 if(!user||!user.is_active) return res.status(401).json({success:false,message:AUTH_FAILED_MESSAGE});
-const isMatch=await bcrypt.compare(password,user.password);
+const isMatch=await comparePassword(password,user.password);
 if(!isMatch) return res.status(401).json({success:false,message:AUTH_FAILED_MESSAGE});
 const token=generateAccessToken(user._id.toString());
 const refreshToken=generateRefreshToken(user._id.toString());

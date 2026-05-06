@@ -1,14 +1,9 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
-import dotenv from "dotenv";
-
 import { User } from "../models/user.model";
-
-dotenv.config();
+import { hashPassword } from "../utils/hash.util";
 
 export const userData = async () => {
-    const hashedPassword = await bcrypt.hash("password123", 10);
-    const user = await User.findOneAndUpdate(
+    const hashedPassword = await hashPassword("superadmin123");
+    await User.findOneAndUpdate(
       { email: "superadmin@gmail.com" },
       {
         $set: {

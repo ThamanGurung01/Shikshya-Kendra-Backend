@@ -4,7 +4,6 @@ export interface IUser{
     email:string;
     password:string;
     role:string;
-    school_id?:Types.ObjectId;
     is_active:boolean;
     refresh_token?:string;
     createdAt:Date;
@@ -17,7 +16,6 @@ name:{type:String,required:true},
 email:{type:String,required:true,unique:true},
 password:{type:String,required:true},
 role:{type:String,required:true},
-school_id:{type:Types.ObjectId,ref:'School'},
 is_active:{type:Boolean,default:true},
 refresh_token:{type:String},
 deletedAt:{type:Date}
