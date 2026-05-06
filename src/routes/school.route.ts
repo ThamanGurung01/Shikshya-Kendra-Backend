@@ -117,7 +117,7 @@ import Role from '../utils/role.util';
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/SchoolInput'
- *     responses:
+ *   responses:
  *       201:
  *         description: School created successfully
  *         content:
@@ -147,6 +147,28 @@ import Role from '../utils/role.util';
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SchoolResponse'
+ *             examples:
+ *               found:
+ *                 summary: Found schools
+ *                 value:
+ *                   success: true
+ *                   message: Schools retrieved successfully
+ *                   data:
+ *                     - _id: 680cf4d5e6e79f54ea8e8c99
+ *                       name: Shikshya Kendra School
+ *                       address: Kathmandu, Nepal
+ *                       contact: 9800000000
+ *                       email: school@example.com
+ *                       website: https://school.example.com
+ *                       kyc_files: []
+ *                       createdAt: 2026-04-01T12:00:00.000Z
+ *                       updatedAt: 2026-04-27T10:45:00.000Z
+ *               notFound:
+ *                 summary: No schools found
+ *                 value:
+ *                   success: true
+ *                   message: School not found
+ *                   data: []
  *       401:
  *         description: Unauthorized
  *
@@ -170,6 +192,28 @@ import Role from '../utils/role.util';
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SchoolResponse'
+ *             examples:
+ *               found:
+ *                 summary: Found school
+ *                 value:
+ *                   success: true
+ *                   message: School retrieved successfully
+ *                   data:
+ *                     _id: 680cf4d5e6e79f54ea8e8c99
+ *                     name: Shikshya Kendra School
+ *                     address: Kathmandu, Nepal
+ *                     contact: 9800000000
+ *                     email: school@example.com
+ *                     website: https://school.example.com
+ *                     kyc_files: []
+ *                     createdAt: 2026-04-01T12:00:00.000Z
+ *                     updatedAt: 2026-04-27T10:45:00.000Z
+ *               notFound:
+ *                 summary: School not found
+ *                 value:
+ *                   success: true
+ *                   message: School not found
+ *                   data: {}
  *       400:
  *         description: ID is required
  *       404:

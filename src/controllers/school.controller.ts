@@ -22,7 +22,7 @@ res.status(500).json({success:false,message:"Internal Server Error"});
 export const getAllSchools=async(_:Request,res:Response)=>{
 try{
     const schools=await schoolService.getAllSchools();
-    if(schools.length===0) return res.status(404).json({success:false,message:"No schools found"});
+    if(schools.length===0) return res.status(200).json({success:true,data:[],message:"School not found"});
     res.status(200).json({ success: true, data: schools, message: "Schools retrieved successfully" });
 }catch(error){
     console.error(error);
@@ -37,7 +37,7 @@ try{
     return res.status(400).json({success:false,message:"Invalid ID format"});
     }
     const school=await schoolService.getSchoolById(id);
-    if(!school) return res.status(404).json({success:false,message:"School not found"});
+    if(!school) return res.status(200).json({success:true,data:{},message:"School not found"});
     res.status(200).json({ success: true, data: school, message: "School retrieved successfully" });
 }catch(error){
     console.error(error);
