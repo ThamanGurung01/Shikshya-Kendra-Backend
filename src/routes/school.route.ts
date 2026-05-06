@@ -46,10 +46,6 @@ import Role from '../utils/role.util';
  *           type: string
  *           format: uri
  *           example: https://school.example.com
- *         kyc_files:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/SchoolKycFile'
  *         name:
  *           type: string
  *           example: School Owner Admin
