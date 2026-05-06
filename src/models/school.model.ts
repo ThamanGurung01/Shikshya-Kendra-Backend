@@ -1,9 +1,9 @@
 import {Schema,model,Types} from "mongoose";
 export interface ISchool{
-    name:string;
+    school_name:string;
     address:string;
     contact:string;
-    email:string;
+    school_email?:string;
     website?:string;
     owner_id?:Types.ObjectId;
     kyc_files?:Array<{
@@ -16,10 +16,10 @@ export interface ISchool{
     deletedAt?:Date|null;
 }
 const schoolSchema=new Schema<ISchool>({
-    name:{type:String,required:true},
+    school_name:{type:String,required:true},
     address:{type:String,required:true},
     contact:{type:String,required:true},
-    email:{type:String,required:true,unique:true,trim:true,lowercase:true},
+    school_email:String,
     website:String,
     owner_id:{type:Types.ObjectId,ref:'User',default:null},
     kyc_files:[{

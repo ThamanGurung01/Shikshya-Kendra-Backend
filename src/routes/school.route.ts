@@ -18,15 +18,18 @@ import Role from '../utils/role.util';
  *           type: string
  *           format: uri
  *           example: https://cdn.example.com/files/registration-certificate.pdf
- *     SchoolInput:
+ *     SchoolCreateInput:
  *       type: object
  *       required:
- *         - name
+ *         - school_name
  *         - address
  *         - contact
+ *         - school_email
+ *         - name
  *         - email
+ *         - password
  *       properties:
- *         name:
+ *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
  *         address:
@@ -35,7 +38,47 @@ import Role from '../utils/role.util';
  *         contact:
  *           type: string
  *           example: 9800000000
+ *         school_email:
+ *           type: string
+ *           format: email
+ *           example: school@example.com
+ *         website:
+ *           type: string
+ *           format: uri
+ *           example: https://school.example.com
+ *         kyc_files:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SchoolKycFile'
+ *         name:
+ *           type: string
+ *           example: School Owner Admin
  *         email:
+ *           type: string
+ *           format: email
+ *           example: oadmin@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           example: StrongPass123
+ *     SchoolInput:
+ *       type: object
+ *       required:
+ *         - school_name
+ *         - address
+ *         - contact
+ *         - school_email
+ *       properties:
+ *         school_name:
+ *           type: string
+ *           example: Shikshya Kendra School
+ *         address:
+ *           type: string
+ *           example: Kathmandu, Nepal
+ *         contact:
+ *           type: string
+ *           example: 9800000000
+ *         school_email:
  *           type: string
  *           format: email
  *           example: school@example.com
@@ -68,6 +111,54 @@ import Role from '../utils/role.util';
  *               format: date-time
  *               nullable: true
  *               example: null
+ *     SchoolCreateResponseData:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: School Owner Admin
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: oadmin@example.com
+ *         role:
+ *           type: string
+ *           example: oadmin
+ *         is_active:
+ *           type: boolean
+ *           example: true
+ *         school_name:
+ *           type: string
+ *           example: Shikshya Kendra School
+ *         address:
+ *           type: string
+ *           example: Kathmandu, Nepal
+ *         contact:
+ *           type: string
+ *           example: 9800000000
+ *         school_email:
+ *           type: string
+ *           format: email
+ *           example: school@example.com
+ *         website:
+ *           type: string
+ *           format: uri
+ *           example: https://school.example.com
+ *         verifiedAt:
+ *           type: string
+ *           format: date-time
+ *           example: 2026-04-27T10:45:00.000Z
+ *     SchoolCreateResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: OAdmin for school created successfully
+ *         data:
+ *           $ref: '#/components/schemas/SchoolCreateResponseData'
  *     SchoolResponse:
  *       type: object
  *       properties:
@@ -116,14 +207,31 @@ import Role from '../utils/role.util';
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SchoolInput'
- *   responses:
+ *             $ref: '#/components/schemas/SchoolCreateInput'
+ *     responses:
  *       201:
- *         description: School created successfully
+ *         description: OAdmin for school created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SchoolResponse'
+ *               $ref: '#/components/schemas/SchoolCreateResponse'
+ *             examples:
+ *               created:
+ *                 summary: School and OAdmin created
+ *                 value:
+ *                   success: true
+ *                   message: OAdmin for school created successfully
+ *                   data:
+ *                     name: School Owner Admin
+ *                     email: oadmin@example.com
+ *                     role: oadmin
+ *                     is_active: true
+ *                     school_name: Shikshya Kendra School
+ *                     address: Kathmandu, Nepal
+ *                     contact: 9800000000
+ *                     school_email: school@example.com
+ *                     website: https://school.example.com
+ *                     verifiedAt: 2026-04-27T10:45:00.000Z
  *       400:
  *         description: Validation failed
  *         content:
