@@ -15,7 +15,7 @@ export const getSchoolById=async(id:string)=>{
 }
 //update
 export const updateSchool=async(id:string,data:ISchoolInput)=>{
-    return await School.findByIdAndUpdate(id,data,{returnDocument:'after'});
+    return await School.findByIdAndUpdate(id,data,{returnDocument:'after',runValidators: true});
 }
 // hard delete
 export const hardDeleteSchool=async(id:string)=>{

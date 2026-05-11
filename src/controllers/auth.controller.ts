@@ -1,11 +1,11 @@
 import {Request,Response} from "express";
-import bcrypt from "bcrypt";
 import {User} from "../models/user.model";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token.util";
 import { LoginSchema,zodError } from "../validators/auth.validator";
 import { resCookie } from "../utils/cookie.util";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import { comparePassword } from "../utils/hash.util";
+import { sendError, sendSuccess } from "../utils/response.util";
 const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const login=async(req:Request,res:Response)=>{
@@ -13,21 +13,22 @@ try{
   const parsed=LoginSchema.safeParse(req.body);
 if(!parsed.success) {
   const tree=zodError(parsed.error);
-  return res.status(400).json({success:false,errors:tree,message:"Validation failed"});}
+  return sendError(res,"Validation failed",tree,400);}
 const {email,password}=parsed.data;
 const user=await User.findOne({email});
-if(!user||!user.is_active) return res.status(401).json({success:false,message:AUTH_FAILED_MESSAGE});
+if(!user||!user.is_active) return sendError(res,AUTH_FAILED_MESSAGE,undefined,401);
 const isMatch=await comparePassword(password,user.password);
-if(!isMatch) return res.status(401).json({success:false,message:AUTH_FAILED_MESSAGE});
+if(!isMatch) return sendError(res,AUTH_FAILED_MESSAGE,undefined,401);
 const token=generateAccessToken(user._id.toString());
 const refreshToken=generateRefreshToken(user._id.toString());
 user.refresh_token=refreshToken;
+user.lastlogin=new Date();
 await user.save();
 resCookie(res,refreshToken,token);
-return res.json({success:true,data:{id:user._id,email:user.email,role:user.role},message:"Login successful"});
+return sendSuccess(res,"Login successful",{id:user._id,email:user.email,role:user.role});
 }catch(error){  
   console.error("Login error:", error);
-return res.status(500).json({success:false,message:"Authentication failed"});
+return sendError(res,"Authentication failed",undefined,500);
 }
 }
 export const logout=async(req:Request,res:Response)=>{
@@ -46,28 +47,25 @@ try {
   }
 res.clearCookie('refreshToken');
 res.clearCookie('accessToken');
-return res.json({success:true,message:"Logged out successfully"});
+return sendSuccess(res,"Logged out successfully");
 } catch (error) {
   console.error("Logout error:", error);
-  return res.status(500).json({success:false,message:"Server error"});
+  return sendError(res,"Server error",undefined,500);
 }
 }
 
 export const authCheck=async (req:AuthenticatedRequest,res:Response)=>{
 try {
   if (!req.userId) {
-    return res.status(401).json({
-      success:false,
-      message: "Unauthorized"
-    });
+    return sendError(res,"Unauthorized",undefined,401);
   }
   const user = await User.findById(req.userId).select("-password -refresh_token");
   if (!user) {
-    return res.status(404).json({success:false,message: "User not found" });
+    return sendError(res,"User not found",undefined,404);
   }
-  return res.json({success:true,data:user,message:"Authenticated"});
+  return sendSuccess(res,"Authenticated",user);
 } catch (error) {
   console.error("Auth check error:", error);
-  return res.status(500).json({success:false,message:"Server error"});
+  return sendError(res,"Server error",undefined,500);
 }
 }

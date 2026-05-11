@@ -8,16 +8,22 @@ import Role from '../utils/role.util';
  * @swagger
  * components:
  *   schemas:
- *     SchoolKycFile:
+ *     SchoolDocument:
  *       type: object
  *       properties:
- *         file_name:
+ *         panCertificate:
+ *           type: object
+ *           properties:
+ *             type:
+ *               type: string
+ *               example: application/pdf
+ *             value:
+ *               type: string
+ *               format: uri
+ *               example: https://cdn.example.com/files/pan-certificate.pdf
+ *         registrationCertificate:
  *           type: string
  *           example: registration-certificate.pdf
- *         file_url:
- *           type: string
- *           format: uri
- *           example: https://cdn.example.com/files/registration-certificate.pdf
  *     SchoolCreateInput:
  *       type: object
  *       required:
@@ -29,6 +35,9 @@ import Role from '../utils/role.util';
  *         - email
  *         - password
  *       properties:
+ *         slug:
+ *           type: string
+ *           example: shikshya-kendra-school
  *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
@@ -46,6 +55,24 @@ import Role from '../utils/role.util';
  *           type: string
  *           format: uri
  *           example: https://school.example.com
+ *         profileImage:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *         map:
+ *           type: string
+ *           format: uri
+ *           example: https://maps.example.com/?q=...
+ *         city:
+ *           type: string
+ *           example: Kathmandu
+ *         country:
+ *           type: string
+ *           example: Nepal
+ *         documents:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SchoolDocument'
  *         name:
  *           type: string
  *           example: School Owner Admin
@@ -85,7 +112,20 @@ import Role from '../utils/role.util';
  *         kyc_files:
  *           type: array
  *           items:
- *             $ref: '#/components/schemas/SchoolKycFile'
+ *             $ref: '#/components/schemas/SchoolDocument'
+ *         map:
+ *           type: string
+ *           example: https://maps.example.com/?q=...
+ *         city:
+ *           type: string
+ *           example: Kathmandu
+ *         country:
+ *           type: string
+ *           example: Nepal
+ *         documents:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SchoolDocument'
  *     School:
  *       allOf:
  *         - $ref: '#/components/schemas/SchoolInput'
@@ -107,6 +147,10 @@ import Role from '../utils/role.util';
  *               format: date-time
  *               nullable: true
  *               example: null
+ *             verifiedAt:
+ *               type: string
+ *               format: date-time
+ *               example: 2026-04-27T10:45:00.000Z
  *     SchoolCreateResponseData:
  *       type: object
  *       properties:
@@ -123,6 +167,10 @@ import Role from '../utils/role.util';
  *         is_active:
  *           type: boolean
  *           example: true
+ *         profileImage:
+ *           type: string
+ *           format: uri
+ *           nullable: true
  *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
@@ -140,6 +188,20 @@ import Role from '../utils/role.util';
  *           type: string
  *           format: uri
  *           example: https://school.example.com
+ *         map:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *         city:
+ *           type: string
+ *           nullable: true
+ *         country:
+ *           type: string
+ *           nullable: true
+ *         documents:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SchoolDocument'
  *         verifiedAt:
  *           type: string
  *           format: date-time
@@ -222,11 +284,16 @@ import Role from '../utils/role.util';
  *                     email: oadmin@example.com
  *                     role: oadmin
  *                     is_active: true
+ *                     profileImage: null
  *                     school_name: Shikshya Kendra School
  *                     address: Kathmandu, Nepal
  *                     contact: 9800000000
  *                     school_email: school@example.com
  *                     website: https://school.example.com
+ *                     map: https://maps.example.com/?q=...
+ *                     city: Kathmandu
+ *                     country: Nepal
+ *                     documents: []
  *                     verifiedAt: 2026-04-27T10:45:00.000Z
  *       400:
  *         description: Validation failed
@@ -259,10 +326,10 @@ import Role from '../utils/role.util';
  *                   message: Schools retrieved successfully
  *                   data:
  *                     - _id: 680cf4d5e6e79f54ea8e8c99
- *                       name: Shikshya Kendra School
+ *                       school_name: Shikshya Kendra School
  *                       address: Kathmandu, Nepal
  *                       contact: 9800000000
- *                       email: school@example.com
+ *                       school_email: school@example.com
  *                       website: https://school.example.com
  *                       kyc_files: []
  *                       createdAt: 2026-04-01T12:00:00.000Z
@@ -304,10 +371,10 @@ import Role from '../utils/role.util';
  *                   message: School retrieved successfully
  *                   data:
  *                     _id: 680cf4d5e6e79f54ea8e8c99
- *                     name: Shikshya Kendra School
+ *                     school_name: Shikshya Kendra School
  *                     address: Kathmandu, Nepal
  *                     contact: 9800000000
- *                     email: school@example.com
+ *                     school_email: school@example.com
  *                     website: https://school.example.com
  *                     kyc_files: []
  *                     createdAt: 2026-04-01T12:00:00.000Z
