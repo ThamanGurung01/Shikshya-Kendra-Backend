@@ -11,13 +11,13 @@ const SchoolSchema=z.object({
     city:z.string().optional().refine(v=>v!==undefined),
     country:z.string().optional().refine(v=>v!==undefined),
     owner_id: z.instanceof(Types.ObjectId).optional().refine(v=>v!==undefined),
-    documents:z.array(z.object({
+    documents:z.object({
         panCertificate:z.object({
             type:z.string().min(3,"PAN certificate type must be at least 3 characters long"),
             value:z.string().min(3,"PAN certificate value must be at least 3 characters long")
         }),
         registrationCertificate:z.string().min(3,"Registration certificate must be at least 3 characters long"),
-    })).optional().refine(v=>v!==undefined),
+    }).optional().refine(v=>v!==undefined),
     verifiedAt:z.date().optional().refine(v=>v!==undefined)
 })
 const userSchema=z.object({
