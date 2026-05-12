@@ -10,13 +10,13 @@ export interface ISchool{
     city?:string;
     country?:string;
     owner_id?:Types.ObjectId;
-    documents?:Array<{
+    documents?:{
     panCertificate:{
         type:string;
         value:string;
     };
     registrationCertificate:string;
-    }>;
+    };
     verifiedAt?:Date|null;
     createdAt:Date;
     updatedAt:Date;
@@ -33,13 +33,13 @@ const schoolSchema=new Schema<ISchool>({
     city:{type:String},
     country:{type:String},
     owner_id:{type:Types.ObjectId,ref:'User',default:null},
-    documents:[{
+    documents:{
     panCertificate:{
         type:{type:String,required:true},
         value:{type:String,required:true}
     },
     registrationCertificate:{type:String,required:true}
-    }],
+    },
     verifiedAt:{type:Date,default:null},
     deletedAt:{type:Date,default:null}
 },{

@@ -4,16 +4,29 @@ import { schoolCreate } from '../validators/school.validator';
 import { zodError } from '../validators/school.validator';
 import { Types } from 'mongoose';
 import { User } from '../models/user.model';
+import { School } from '../models/school.model';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 //create school
 export const createSchool=async(req:Request,res:Response)=>{
 try{
+    //validation using zod
     const parsed=schoolCreate.safeParse(req.body);
     if(!parsed.success) {
   const tree=zodError(parsed.error);
     return sendError(res,"Validation failed",tree,400);}
     const parsedSchoolData=parsed.data;
+    //check for duplicate email
+    const existingUser=await User.findOne({email:parsedSchoolData.email});
+    if(existingUser) {
+        return sendError(res,"Email already exists",undefined,409);
+    }
+    //check for duplicate slug
+    const existingSchool=await School.findOne({slug:parsedSchoolData.slug});
+    if(existingSchool) {
+        return sendError(res,"Slug already exists",undefined,409);
+    }
+    
     const hashedPassword=await hashPassword(parsedSchoolData.password);
     const user=await User.create({
         name:parsedSchoolData.name,
@@ -80,11 +93,37 @@ try{
     if (!Types.ObjectId.isValid(id)) {
     return sendError(res,"Invalid ID format",undefined,400);
     }
-        const parsed=schoolCreate.safeParse(req.body);
+    const parsed=schoolCreate.safeParse(req.body);
 if(!parsed.success) {
   const tree=zodError(parsed.error);
   return sendError(res,"Validation failed",tree,400);}
     const parsedData=parsed.data;
+    
+    // Get current school to find owner_id
+    const currentSchool=await schoolService.getSchoolById(id);
+    if(!currentSchool) return sendError(res,"School not found",undefined,404);
+    
+    // Check for duplicate email if email is being updated
+    if(parsedData.email) {
+        const existingUser=await User.findOne({email:parsedData.email, _id:{$ne:currentSchool.owner_id}});
+        if(existingUser) {
+            return sendError(res,"Email already exists",undefined,409);
+        }
+    }
+        //check for duplicate slug
+    const existingSchool=await School.findOne({slug:parsedData.slug});
+    if(existingSchool) {
+        return sendError(res,"Slug already exists",undefined,409);
+    }
+    const userUpdateData: any = {};
+    if(parsedData.name) userUpdateData.name = parsedData.name;
+    if(parsedData.profileImage) userUpdateData.profileImage = parsedData.profileImage;
+    if(parsedData.password) {
+        userUpdateData.password = await hashPassword(parsedData.password);
+    }
+    if(Object.keys(userUpdateData).length > 0) {
+        await User.findByIdAndUpdate(currentSchool.owner_id, userUpdateData);
+    }
     const school=await schoolService.updateSchool(id,parsedData);
     if(!school) return sendError(res,"School not found",undefined,404);
     sendSuccess(res, "School updated successfully", school, 200);

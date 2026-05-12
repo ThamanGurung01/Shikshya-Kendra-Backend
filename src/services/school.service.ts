@@ -7,7 +7,7 @@ export const createSchool=async(data:ISchoolInput)=>{
 }
 //get all
 export const getAllSchools=async()=>{
-    return await School.find();
+    return await School.find().limit(20).sort({createdAt:-1});
 }
 //get by id
 export const getSchoolById=async(id:string)=>{

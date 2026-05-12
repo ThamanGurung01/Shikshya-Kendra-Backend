@@ -70,9 +70,7 @@ import Role from '../utils/role.util';
  *           type: string
  *           example: Nepal
  *         documents:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/SchoolDocument'
+ *           $ref: '#/components/schemas/SchoolDocument'
  *         name:
  *           type: string
  *           example: School Owner Admin
@@ -92,6 +90,9 @@ import Role from '../utils/role.util';
  *         - contact
  *         - school_email
  *       properties:
+ *         slug:
+ *           type: string
+ *           example: shikshya-kendra-school
  *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
@@ -123,9 +124,7 @@ import Role from '../utils/role.util';
  *           type: string
  *           example: Nepal
  *         documents:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/SchoolDocument'
+ *           $ref: '#/components/schemas/SchoolDocument'
  *     School:
  *       allOf:
  *         - $ref: '#/components/schemas/SchoolInput'
@@ -154,6 +153,9 @@ import Role from '../utils/role.util';
  *     SchoolCreateResponseData:
  *       type: object
  *       properties:
+ *         slug:
+ *           type: string
+ *           example: shikshya-kendra-school
  *         name:
  *           type: string
  *           example: School Owner Admin
@@ -199,9 +201,7 @@ import Role from '../utils/role.util';
  *           type: string
  *           nullable: true
  *         documents:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/SchoolDocument'
+ *           $ref: '#/components/schemas/SchoolDocument'
  *         verifiedAt:
  *           type: string
  *           format: date-time
@@ -280,6 +280,7 @@ import Role from '../utils/role.util';
  *                   success: true
  *                   message: OAdmin for school created successfully
  *                   data:
+ *                     slug: shikshya-kendra-school
  *                     name: School Owner Admin
  *                     email: oadmin@example.com
  *                     role: oadmin
@@ -293,7 +294,11 @@ import Role from '../utils/role.util';
  *                     map: https://maps.example.com/?q=...
  *                     city: Kathmandu
  *                     country: Nepal
- *                     documents: []
+ *                     documents:
+ *                       panCertificate:
+ *                         type: application/pdf
+ *                         value: https://cdn.example.com/files/pan-certificate.pdf
+ *                       registrationCertificate: registration-certificate.pdf
  *                     verifiedAt: 2026-04-27T10:45:00.000Z
  *       400:
  *         description: Validation failed
@@ -301,6 +306,15 @@ import Role from '../utils/role.util';
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       409:
+ *         description: Email already exists or slug already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *             example:
+ *               success: false
+ *               message: Slug already exists
  *       401:
  *         description: Unauthorized
  *       403:
@@ -326,6 +340,7 @@ import Role from '../utils/role.util';
  *                   message: Schools retrieved successfully
  *                   data:
  *                     - _id: 680cf4d5e6e79f54ea8e8c99
+ *                       slug: shikshya-kendra-school
  *                       school_name: Shikshya Kendra School
  *                       address: Kathmandu, Nepal
  *                       contact: 9800000000
@@ -371,12 +386,18 @@ import Role from '../utils/role.util';
  *                   message: School retrieved successfully
  *                   data:
  *                     _id: 680cf4d5e6e79f54ea8e8c99
+ *                     slug: shikshya-kendra-school
  *                     school_name: Shikshya Kendra School
  *                     address: Kathmandu, Nepal
  *                     contact: 9800000000
  *                     school_email: school@example.com
  *                     website: https://school.example.com
  *                     kyc_files: []
+ *                     documents:
+ *                       panCertificate:
+ *                         type: application/pdf
+ *                         value: https://cdn.example.com/files/pan-certificate.pdf
+ *                       registrationCertificate: registration-certificate.pdf
  *                     createdAt: 2026-04-01T12:00:00.000Z
  *                     updatedAt: 2026-04-27T10:45:00.000Z
  *               notFound:
@@ -408,7 +429,7 @@ import Role from '../utils/role.util';
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SchoolInput'
+ *             $ref: '#/components/schemas/SchoolCreateInput'
  *     responses:
  *       200:
  *         description: School updated successfully
