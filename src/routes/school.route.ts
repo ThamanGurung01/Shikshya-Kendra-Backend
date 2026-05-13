@@ -35,9 +35,6 @@ import Role from '../utils/role.util';
  *         - email
  *         - password
  *       properties:
- *         slug:
- *           type: string
- *           example: shikshya-kendra-school
  *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
@@ -90,9 +87,6 @@ import Role from '../utils/role.util';
  *         - contact
  *         - school_email
  *       properties:
- *         slug:
- *           type: string
- *           example: shikshya-kendra-school
  *         school_name:
  *           type: string
  *           example: Shikshya Kendra School
@@ -306,15 +300,6 @@ import Role from '../utils/role.util';
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
- *       409:
- *         description: Email already exists or slug already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MessageResponse'
- *             example:
- *               success: false
- *               message: Slug already exists
  *       401:
  *         description: Unauthorized
  *       403:
