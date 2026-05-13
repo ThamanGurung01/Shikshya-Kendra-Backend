@@ -4,7 +4,6 @@ import { schoolCreate } from '../validators/school.validator';
 import { zodError } from '../validators/school.validator';
 import { Types } from 'mongoose';
 import { User } from '../models/user.model';
-import { School } from '../models/school.model';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 //create school
@@ -20,11 +19,6 @@ try{
     const existingUser=await User.findOne({email:parsedSchoolData.email});
     if(existingUser) {
         return sendError(res,"Email already exists",undefined,409);
-    }
-    //check for duplicate slug
-    const existingSchool=await School.findOne({slug:parsedSchoolData.slug});
-    if(existingSchool) {
-        return sendError(res,"Slug already exists",undefined,409);
     }
     
     const hashedPassword=await hashPassword(parsedSchoolData.password);
@@ -109,11 +103,6 @@ if(!parsed.success) {
         if(existingUser) {
             return sendError(res,"Email already exists",undefined,409);
         }
-    }
-        //check for duplicate slug
-    const existingSchool=await School.findOne({slug:parsedData.slug});
-    if(existingSchool) {
-        return sendError(res,"Slug already exists",undefined,409);
     }
     const userUpdateData: any = {};
     if(parsedData.name) userUpdateData.name = parsedData.name;

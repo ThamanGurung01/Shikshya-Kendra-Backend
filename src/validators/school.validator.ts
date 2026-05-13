@@ -1,7 +1,6 @@
 import { Types } from 'mongoose';
 import {z,ZodError} from 'zod';
 const SchoolSchema=z.object({
-    slug:z.string().min(3,"Slug must be at least 3 characters long"),
     school_name:z.string().min(3,"Name must be at least 3 characters long"),
     address:z.string().min(5,"Address must be at least 5 characters long"),
     contact:z.string().min(10,"Contact number must be at least 10 characters long"),

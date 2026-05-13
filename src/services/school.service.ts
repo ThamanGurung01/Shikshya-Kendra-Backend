@@ -1,9 +1,12 @@
 import { Types } from "mongoose";
 import {School } from "../models/school.model";
 import { ISchoolInput } from "../validators/school.validator";
+import { generateUniqueSlug } from "../utils/slug.util";
+
 //create
 export const createSchool=async(data:ISchoolInput)=>{
-    return await School.create(data);
+    const slug = await generateUniqueSlug(School, data.school_name || '');
+    return await School.create({ ...data, slug });
 }
 //get all
 export const getAllSchools=async()=>{
@@ -15,7 +18,11 @@ export const getSchoolById=async(id:string)=>{
 }
 //update
 export const updateSchool=async(id:string,data:ISchoolInput)=>{
-    return await School.findByIdAndUpdate(id,data,{returnDocument:'after',runValidators: true});
+    const updateData: any = { ...data };
+    if (data.school_name) {
+        updateData.slug = await generateUniqueSlug(School, data.school_name, id);
+    }
+    return await School.findByIdAndUpdate(id, updateData, {returnDocument:'after',runValidators: true});
 }
 // hard delete
 export const hardDeleteSchool=async(id:string)=>{
