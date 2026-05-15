@@ -3,6 +3,7 @@ import { authenticate } from '../middlewares/auth.middleware';
 import { createSchool, hardDeleteSchool,getAllSchools,getSchoolById,updateSchool } from '../controllers/school.controller';
 import { authorize } from '../middlewares/role.middleware';
 import Role from '../utils/role.util';
+import { uploadMiddleware } from '../middlewares/upload.middleware';
 
 /**
  * @swagger
@@ -457,9 +458,9 @@ import Role from '../utils/role.util';
  *         description: Forbidden
  */
 const schoolRouter=Router();
-schoolRouter.post('/',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),createSchool);
+schoolRouter.post('/',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),uploadMiddleware,createSchool);
 schoolRouter.get('/',authenticate,getAllSchools);
 schoolRouter.get('/:id',authenticate,getSchoolById);
-schoolRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),updateSchool);
+schoolRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),uploadMiddleware,updateSchool);
 schoolRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN]),hardDeleteSchool);
 export default schoolRouter;
