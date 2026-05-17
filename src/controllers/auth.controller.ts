@@ -38,6 +38,7 @@ try {
   if (token) {
     if(!process.env.REFRESH_TOKEN_SECRET) throw new Error('REFRESH_TOKEN_SECRET is not defined in environment variables');
     const decoded = verifyToken(token, process.env.REFRESH_TOKEN_SECRET);
+    if(!decoded) throw new Error('Invalid refresh token');
     const user = await User.findById(decoded);
 
     if (user) {

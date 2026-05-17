@@ -1,14 +1,17 @@
 import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
+import * as userService from '../services/user.service';
 import { schoolCreate } from '../validators/school.validator';
 import { zodError } from '../validators/school.validator';
 import { Types } from 'mongoose';
 import { User } from '../models/user.model';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
+import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 //create school
-export const createSchool=async(req:Request,res:Response)=>{
+export const createSchool=async(req:AuthenticatedRequest,res:Response)=>{
 try{
+    if(!req.userId) return sendError(res,"Unauthorized",undefined,401);
     //validation using zod
     const parsed=schoolCreate.safeParse(req.body);
     if(!parsed.success) {
@@ -16,13 +19,13 @@ try{
     return sendError(res,"Validation failed",tree,400);}
     const parsedSchoolData=parsed.data;
     //check for duplicate email
-    const existingUser=await User.findOne({email:parsedSchoolData.email});
+    const existingUser=await userService.getUserByEmail(parsedSchoolData.email,req.userId);
     if(existingUser) {
         return sendError(res,"Email already exists",undefined,409);
     }
     
     const hashedPassword=await hashPassword(parsedSchoolData.password);
-    const user=await User.create({
+    const user=await userService.createUser({
         name:parsedSchoolData.name,
         email:parsedSchoolData.email,
         password:hashedPassword,
@@ -96,14 +99,7 @@ if(!parsed.success) {
     // Get current school to find owner_id
     const currentSchool=await schoolService.getSchoolById(id);
     if(!currentSchool) return sendError(res,"School not found",undefined,404);
-    
-    // Check for duplicate email if email is being updated
-    if(parsedData.email) {
-        const existingUser=await User.findOne({email:parsedData.email, _id:{$ne:currentSchool.owner_id}});
-        if(existingUser) {
-            return sendError(res,"Email already exists",undefined,409);
-        }
-    }
+
     const userUpdateData: any = {};
     if(parsedData.name) userUpdateData.name = parsedData.name;
     if(parsedData.profileImage) userUpdateData.profileImage = parsedData.profileImage;
@@ -111,7 +107,7 @@ if(!parsed.success) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
     if(Object.keys(userUpdateData).length > 0) {
-        await User.findByIdAndUpdate(currentSchool.owner_id, userUpdateData);
+        await userService.updateUser(currentSchool._id.toString(), userUpdateData);
     }
     const school=await schoolService.updateSchool(id,parsedData);
     if(!school) return sendError(res,"School not found",undefined,404);
@@ -130,6 +126,8 @@ try{
     }
     const school=await schoolService.hardDeleteSchool(id);
     if(!school) return sendError(res,"School not found",undefined,404);
+    const user=await userService.hardDeleteUser(school._id.toString());
+    if(!user) return sendError(res,"Associated user not found",undefined,404);
     sendSuccess(res, "School permanently deleted successfully", school, 200);
 }catch(error){
     console.error(error);
