@@ -1,30 +1,43 @@
 import { Types } from "mongoose";
-import {School } from "../models/school.model";
-import { ISchoolInput } from "../validators/school.validator";
+import { School } from "../models/school.model";
+import { ISchoolInput, ISchoolUpdate } from "../validators/school.validator";
 import { generateUniqueSlug } from "../utils/slug.util";
 
-//create
-export const createSchool=async(data:ISchoolInput)=>{
+// create
+export const createSchool = async (data: ISchoolInput) => {
     const slug = await generateUniqueSlug(School, data.school_name || '');
     return await School.create({ ...data, slug });
 }
-//get all
-export const getAllSchools=async()=>{
-    return await School.find().limit(20).sort({createdAt:-1});
+
+// get all — no user population needed for list view
+export const getAllSchools = async () => {
+    return await School.find()
+        .limit(20)
+        .sort({ createdAt: -1 })
+        .populate('owner_id', 'name email profileImage role is_active')
+        .lean();
 }
-//get by id
-export const getSchoolById=async(id:string)=>{
-    return await School.findById(id);
+
+// get by id — populate owner so frontend gets name + profileImage
+export const getSchoolById = async (id: string) => {
+    return await School.findById(id)
+        .populate('owner_id', 'name email profileImage role is_active')
+        .lean();
 }
-//update
-export const updateSchool=async(id:string,data:ISchoolInput)=>{
-    const updateData: any = { ...data };
+
+// update — accepts partial update type
+export const updateSchool = async (id: string, data: ISchoolUpdate) => {
+    const updateData: Record<string, unknown> = { ...data };
     if (data.school_name) {
         updateData.slug = await generateUniqueSlug(School, data.school_name, id);
     }
-    return await School.findByIdAndUpdate(id, updateData, {returnDocument:'after',runValidators: true});
+    return await School.findByIdAndUpdate(id, updateData, {
+        returnDocument: 'after',
+        runValidators: true,
+    }).populate('owner_id', 'name email profileImage role is_active').lean();
 }
+
 // hard delete
-export const hardDeleteSchool=async(id:string)=>{
+export const hardDeleteSchool = async (id: string) => {
     return await School.findByIdAndDelete(id);
 }

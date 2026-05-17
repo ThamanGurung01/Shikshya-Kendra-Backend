@@ -13,17 +13,32 @@ const SchoolSchema=z.object({
     owner_id: z.instanceof(Types.ObjectId),
     documents:z.object({
         panCertificate:z.object({
-            type:z.string().min(3,"PAN certificate type must be at least 3 characters long"),
-            value:z.string().min(3,"PAN certificate value must be at least 3 characters long")
+            type:z.string().min(1,"PAN certificate type is required"),
+            value:z.string().min(1,"PAN certificate value is required")
         }),
-        registrationCertificate:z.string().min(3,"Registration certificate must be at least 3 characters long"),
+        registrationCertificate:z.string().min(1,"Registration certificate is required"),
     }).optional().refine(v=>v!==undefined),
     verifiedAt:z.date().optional().refine(v=>v!==undefined)
 })
+const userSchema=z.object({
+    name:z.string().min(3,"Name must be at least 3 characters long"),
+    email:z.email("Invalid email address"),
+    password:z.string().min(6,"Password must be at least 6 characters long"),
+    profileImage:z.string().optional().refine(v=>v!==undefined),
+})
+// Full create: school fields + required user fields
 
 export const schoolCreate=SchoolSchema.extend(userSchema.shape);
+// Update: school fields + all user fields optional
+export const schoolUpdate=SchoolSchema.partial().extend({
+    name:z.string().min(3,"Name must be at least 3 characters long").optional(),
+    email:z.email("Invalid email address").optional(),
+    password:z.string().min(6,"Password must be at least 6 characters long").optional(),
+    profileImage:z.string().optional(),
+});
 export const zodError=(parsedError:ZodError)=>{
     const tree=z.treeifyError(parsedError);
     return tree.errors;
 }
 export type ISchoolInput=z.infer<typeof SchoolSchema>;
+export type ISchoolUpdate=z.infer<typeof schoolUpdate>;
