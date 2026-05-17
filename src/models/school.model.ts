@@ -9,7 +9,7 @@ export interface ISchool{
     map?:string;
     city?:string;
     country?:string;
-    owner_id?:Types.ObjectId;
+    owner_id:Types.ObjectId;
     documents?:{
     panCertificate:{
         type:string;
@@ -32,7 +32,7 @@ const schoolSchema=new Schema<ISchool>({
     map:{type:String},
     city:{type:String},
     country:{type:String},
-    owner_id:{type:Types.ObjectId,ref:'User',default:null},
+    owner_id:{type:Types.ObjectId,ref:'User',required:true},
     documents:{
     panCertificate:{
         type:{type:String,required:true},
