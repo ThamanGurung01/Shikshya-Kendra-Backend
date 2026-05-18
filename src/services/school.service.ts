@@ -4,9 +4,9 @@ import { ISchoolInput, ISchoolUpdate } from "../validators/school.validator";
 import { generateUniqueSlug } from "../utils/slug.util";
 
 // create
-export const createSchool = async (data: ISchoolInput) => {
+export const createSchool = async (data: ISchoolInput,others:Object={}) => {
     const slug = await generateUniqueSlug(School, data.school_name || '');
-    return await School.create({ ...data, slug });
+    return await School.create({ ...data, slug,...others });
 }
 
 // get all — no user population needed for list view
