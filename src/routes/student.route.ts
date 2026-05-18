@@ -350,7 +350,7 @@ import { authorize } from "../middlewares/role.middleware";
  */
 const studentRouter=Router();
 studentRouter.post('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),createStudent);
-studentRouter.get('/',authenticate,getAllStudents);
+studentRouter.get('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),getAllStudents);
 studentRouter.get('/:id',authenticate,getStudentById);
 studentRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),updateStudent);
 studentRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN]),hardDeleteStudent);

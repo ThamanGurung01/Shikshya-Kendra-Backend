@@ -4,7 +4,7 @@ import cloudinary from '../configs/cloudinary';
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (_req, file) => ({
+  params: async (_req: any, file: any) => ({
     folder: file.fieldname === 'profileImage' ? 'profile-images' : 'school-documents',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
     resource_type: 'auto',
