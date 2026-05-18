@@ -3,6 +3,7 @@ import * as studentService from '../services/student.service';
 import * as userService from '../services/user.service';
 import { studentCreate } from '../validators/student.validator';
 import { zodError } from '../validators/student.validator';
+import { IUserInput } from '../validators/user.validator';
 import { Types } from 'mongoose';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
@@ -95,7 +96,7 @@ if(!parsed.success) {
             return sendError(res,"Email already exists",undefined,409);
         }
     }
-    const userUpdateData: any = {};
+    const userUpdateData: Partial<IUserInput> = {};
     if(parsedData.name) userUpdateData.name = parsedData.name;
     if(parsedData.profileImage) userUpdateData.profileImage = parsedData.profileImage;
     if(parsedData.password) {

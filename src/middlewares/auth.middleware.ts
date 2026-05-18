@@ -5,6 +5,7 @@ import {Request,Response,NextFunction} from "express";
 const REFRESH_FAILED_MESSAGE = "Invalid refresh token";
 export interface AuthenticatedRequest extends Request {
     userId?: string;
+    role?:string;
 }
 export const authenticate=(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try{

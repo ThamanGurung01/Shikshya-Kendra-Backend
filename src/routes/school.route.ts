@@ -459,7 +459,7 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  */
 const schoolRouter=Router();
 schoolRouter.post('/',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),uploadMiddleware,createSchool);
-schoolRouter.get('/',authenticate,getAllSchools);
+schoolRouter.get('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),getAllSchools);
 schoolRouter.get('/:id',authenticate,getSchoolById);
 schoolRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),uploadMiddleware,updateSchool);
 schoolRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN]),hardDeleteSchool);

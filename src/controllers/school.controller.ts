@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
-import { schoolCreate, schoolUpdate, zodError } from '../validators/school.validator';
 import * as userService from '../services/user.service';
-import { zodError } from '../validators/school.validator';
+import { schoolCreate, schoolUpdate, zodError } from '../validators/school.validator';
+import { IUserInput } from '../validators/user.validator';
 import { Types } from 'mongoose';
-import { User } from '../models/user.model';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
+import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
@@ -41,7 +41,8 @@ function buildDocuments(body: any, panUrl?: string, regUrl?: string) {
 }
 
 // ─── Create School ───────────────────────────────────────────────────────────
-export const createSchool = async (req: Request, res: Response) => {
+export const createSchool = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
   let createdUserId: Types.ObjectId | null = null;
   try {
     const { panUrl, regUrl, profileImageUrl } = extractFileUrls(req);
@@ -65,7 +66,7 @@ export const createSchool = async (req: Request, res: Response) => {
     const parsedData = parsed.data;
 
     // Check for duplicate email
-    const existingUser = await User.findOne({ email: parsedData.email });
+    const existingUser = await userService.getUserByEmail(parsedData.email,req.userId);
     if (existingUser) {
       return sendError(res, 'Email already exists', undefined, 409);
     }
@@ -73,7 +74,7 @@ export const createSchool = async (req: Request, res: Response) => {
     const hashedPassword = await hashPassword(parsedData.password);
 
     // ── Create user first, then school. Roll back user if school fails. ──────
-    const user = await User.create({
+    const user = await userService.createUser({
       name: parsedData.name,
       email: parsedData.email,
       password: hashedPassword,
@@ -116,9 +117,10 @@ export const createSchool = async (req: Request, res: Response) => {
   } catch (error) {
     // Rollback: delete the user if it was created but school creation failed
     if (createdUserId) {
-      await User.findByIdAndDelete(createdUserId).catch((e) =>
-        console.error('Rollback failed — orphaned user:', createdUserId, e),
-      );
+      const user=await userService.hardDeleteUser(createdUserId.toString());
+      if(!user){
+        console.error('Rollback failed — orphaned user:', createdUserId);
+      }
     }
     console.error(error);
     return sendError(res, 'Internal Server Error', undefined, 500);
@@ -155,7 +157,7 @@ export const getSchoolById = async (req: Request, res: Response) => {
 };
 
 // ─── Update School ───────────────────────────────────────────────────────────
-export const updateSchool = async (req: Request, res: Response) => {
+export const updateSchool = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
@@ -185,27 +187,27 @@ export const updateSchool = async (req: Request, res: Response) => {
     // Get current school to find owner_id
     const currentSchool = await schoolService.getSchoolById(id);
     if (!currentSchool) return sendError(res, 'School not found', undefined, 404);
-
+    const isOwner = currentSchool.owner_id.toString() === req.userId;
+    if (!isOwner && req.role !== 'superadmin') {
+      return sendError(res, 'Forbidden: You do not own this school', undefined, 403);
+    }
     // Check for duplicate email if email is changing
     if (parsedData.email) {
-      const existingUser = await User.findOne({
-        email: parsedData.email,
-        _id: { $ne: currentSchool.owner_id },
-      });
+      const existingUser = await userService.getUserByEmail(parsedData.email, currentSchool.owner_id.toString());
       if (existingUser) {
         return sendError(res, 'Email already exists', undefined, 409);
       }
     }
 
     // Update linked user (only fields that were actually provided)
-    const userUpdateData: Record<string, unknown> = {};
+    const userUpdateData: Partial<IUserInput> = {};
     if (parsedData.name) userUpdateData.name = parsedData.name;
     if (parsedData.profileImage) userUpdateData.profileImage = parsedData.profileImage;
     if (parsedData.password) {
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await User.findByIdAndUpdate(currentSchool.owner_id, userUpdateData);
+      await userService.updateUser(currentSchool.owner_id.toString(), userUpdateData);
     }
 
     const school = await schoolService.updateSchool(id, parsedData);
