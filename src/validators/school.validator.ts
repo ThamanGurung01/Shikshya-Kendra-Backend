@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import {z,ZodError} from 'zod';
+import { userSchema } from './user.validator';
 const SchoolSchema=z.object({
     school_name:z.string().min(3,"Name must be at least 3 characters long"),
     address:z.string().min(5,"Address must be at least 5 characters long"),
@@ -9,7 +10,7 @@ const SchoolSchema=z.object({
     map:z.string().optional().refine(v=>v!==undefined),
     city:z.string().optional().refine(v=>v!==undefined),
     country:z.string().optional().refine(v=>v!==undefined),
-    owner_id: z.instanceof(Types.ObjectId).optional().refine(v=>v!==undefined),
+    owner_id: z.instanceof(Types.ObjectId),
     documents:z.object({
         panCertificate:z.object({
             type:z.string().min(1,"PAN certificate type is required"),
@@ -26,6 +27,7 @@ const userSchema=z.object({
     profileImage:z.string().optional().refine(v=>v!==undefined),
 })
 // Full create: school fields + required user fields
+
 export const schoolCreate=SchoolSchema.extend(userSchema.shape);
 // Update: school fields + all user fields optional
 export const schoolUpdate=SchoolSchema.partial().extend({
