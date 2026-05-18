@@ -19,7 +19,7 @@ export const getUserByEmail=async(email:string,currentId:string)=>{
     return await User.findOne({email});
 }
 //update
-export const updateUser=async(id:string,data:IUserInput)=>{
+export const updateUser=async(id:string,data:Partial<IUserInput>)=>{
     return await User.findByIdAndUpdate(id, data, {returnDocument:'after',runValidators: true});
 }
 // hard delete
