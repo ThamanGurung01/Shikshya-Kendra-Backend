@@ -87,8 +87,9 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
     // If school creation fails, the catch block deletes the user (rollback)
     const school = await schoolService.createSchool({
       ...parsedData,
-      owner_id: user._id as Types.ObjectId,
       verifiedAt: new Date(),
+    },{
+            owner_id: user._id,
     });
 
     return sendSuccess(
