@@ -7,6 +7,12 @@ const swaggerOptions={
             version: '1.0.0',
             description: 'API documentation for Shikshya Kendra backend'
         },
+        tags: [
+            { name: 'Auth' },
+            { name: 'School' },
+            { name: 'Student' },
+            { name: 'Academic Year' },
+        ],
         components: {
             securitySchemes: {
                 bearerAuth: {

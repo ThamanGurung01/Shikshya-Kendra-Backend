@@ -16,7 +16,7 @@ export const getUserById=async(id:string)=>{
 }
 //get by email
 export const getUserByEmail=async(email:string,currentId:string)=>{
-    return await User.findOne({email});
+    return await User.findOne({email, _id: { $ne: currentId }});
 }
 //update
 export const updateUser=async(id:string,data:Partial<IUserInput>)=>{

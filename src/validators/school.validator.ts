@@ -1,4 +1,3 @@
-import { Types } from 'mongoose';
 import {z,ZodError} from 'zod';
 import { userSchema } from './user.validator';
 const SchoolSchema=z.object({

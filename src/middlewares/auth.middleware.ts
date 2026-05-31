@@ -6,6 +6,7 @@ const REFRESH_FAILED_MESSAGE = "Invalid refresh token";
 export interface AuthenticatedRequest extends Request {
     userId?: string;
     role?:string;
+    schoolId?:string;
 }
 export const authenticate=(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try{

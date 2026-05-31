@@ -1,0 +1,107 @@
+import { Request, Response } from 'express';
+import * as AcademicYearService from '../services/academic-year.service';
+import { zodError,AcademicYearSchema, IAcademicYearInput } from '../validators/academic-year.validator';
+import { Types } from 'mongoose';
+import { sendError, sendSuccess } from '../utils/response.util';
+import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+
+// ─── Create AcademicYear ───────────────────────────────────────────────────────────
+export const createAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
+  try {
+    const parsed = AcademicYearSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const tree = zodError(parsed.error);
+      return sendError(res, 'Validation failed', tree, 400);
+    }
+    const parsedData = parsed.data;
+    const AcademicYear = await AcademicYearService.createAcademicYear(parsedData,{
+            schoolId: req.role !== 'superadmin' ? req.schoolId : '680cf4d5e6e79f54ea8e8c98',
+    });
+
+    return sendSuccess(
+      res,
+      'OAdmin for AcademicYear created successfully',
+      {
+         name: AcademicYear.name,
+         startDate: AcademicYear.startDate,
+         endDate: AcademicYear.endDate,
+         isCurrent: AcademicYear.isCurrent,
+      },
+      201,
+    );
+  } catch (error) {
+    console.error(error);
+    return sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+
+// ─── Get All AcademicYears ─────────────────────────────────────────────────────────
+export const getAllAcademicYears = async (_: Request, res: Response) => {
+  try {
+    const AcademicYears = await AcademicYearService.getAllAcademicYears();
+    if (AcademicYears.length === 0) return sendSuccess(res, 'AcademicYear not found', [], 200);
+    sendSuccess(res, 'AcademicYears retrieved successfully', AcademicYears, 200);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+
+// ─── Get AcademicYear By ID ────────────────────────────────────────────────────────
+export const getAcademicYearById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(id)) {
+      return sendError(res, 'Invalid ID format', undefined, 400);
+    }
+    const AcademicYear = await AcademicYearService.getAcademicYearById(id);
+    if (!AcademicYear) return sendSuccess(res, 'AcademicYear not found', {}, 200);
+    sendSuccess(res, 'AcademicYear retrieved successfully', AcademicYear, 200);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+
+// ─── Update AcademicYear ───────────────────────────────────────────────────────────
+export const updateAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(id)) {
+      return sendError(res, 'Invalid ID format', undefined, 400);
+    }
+    const parsed = AcademicYearSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const tree = zodError(parsed.error);
+      console.error('Update validation failed:', JSON.stringify(tree, null, 2));
+      return sendError(res, 'Validation failed', tree, 400);
+    }
+    const parsedData = parsed.data;
+    const AcademicYear = await AcademicYearService.updateAcademicYear(id, parsedData);
+    if (!AcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
+    sendSuccess(res, 'AcademicYear updated successfully', AcademicYear, 200);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+
+// ─── Hard Delete AcademicYear ──────────────────────────────────────────────────────
+export const hardDeleteAcademicYear = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(id)) {
+      return sendError(res, 'Invalid ID format', undefined, 400);
+    }
+    const AcademicYear = await AcademicYearService.hardDeleteAcademicYear(id);
+    if (!AcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
+    sendSuccess(res, 'AcademicYear permanently deleted successfully', AcademicYear, 200);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
