@@ -12,6 +12,9 @@ const swaggerOptions={
             { name: 'School' },
             { name: 'Student' },
             { name: 'Academic Year' },
+            { name: 'Class' },
+            { name: 'Section' },
+            { name: 'Subject' },
         ],
         components: {
             securitySchemes: {
