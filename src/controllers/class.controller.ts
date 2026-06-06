@@ -4,11 +4,7 @@ import { zodError, ClassSchema } from '../validators/class.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-
-const resolveSchoolId = (req: AuthenticatedRequest) => {
-  if (req.role === 'superadmin') return req.body.schoolId;
-  return req.schoolId;
-};
+import { resolveSchoolId } from '../utils/resolve-school-id.util';
 
 export const createClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
@@ -33,9 +29,14 @@ export const createClass = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
-export const getAllClasses = async (_: Request, res: Response) => {
+export const getAllClasses = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const classes = await ClassService.getAllClasses();
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res,'School ID is required',undefined,400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+    const classes = await ClassService.getAllClasses(schoolId);
     if (classes.length === 0) return sendSuccess(res, 'Class not found', [], 200);
     return sendSuccess(res, 'Classes retrieved successfully', classes, 200);
   } catch (error) {

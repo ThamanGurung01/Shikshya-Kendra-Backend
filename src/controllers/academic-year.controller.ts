@@ -4,6 +4,7 @@ import { zodError,AcademicYearSchema, IAcademicYearInput } from '../validators/a
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { resolveSchoolId } from '../utils/resolve-school-id.util';
 
 // ─── Create AcademicYear ───────────────────────────────────────────────────────────
 export const createAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
@@ -37,9 +38,14 @@ export const createAcademicYear = async (req: AuthenticatedRequest, res: Respons
 };
 
 // ─── Get All AcademicYears ─────────────────────────────────────────────────────────
-export const getAllAcademicYears = async (_: Request, res: Response) => {
+export const getAllAcademicYears = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const AcademicYears = await AcademicYearService.getAllAcademicYears();
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+    const AcademicYears = await AcademicYearService.getAllAcademicYears(schoolId);
     if (AcademicYears.length === 0) return sendSuccess(res, 'AcademicYear not found', [], 200);
     sendSuccess(res, 'AcademicYears retrieved successfully', AcademicYears, 200);
   } catch (error) {

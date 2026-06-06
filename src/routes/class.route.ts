@@ -35,6 +35,9 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         name:
  *           type: string
  *           example: Grade 8
+ *         sectionCount:
+ *           type: integer
+ *           example: 3
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -55,12 +58,13 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/ClassInput'
- *           example:
- *             schoolId: 680cf4d5e6e79f54ea8e8c98
- *             name: Grade 8
  *     responses:
  *       201:
  *         description: Class created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Class'
  *       400:
  *         description: Validation failed
  *       401:
@@ -71,6 +75,17 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *       - Class
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Classes retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Class'
+ *       401:
+ *         description: Unauthorized
  *
  * /api/v1/class/{id}:
  *   get:
@@ -86,6 +101,19 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         schema:
  *           type: string
  *         example: 680cf4d5e6e79f54ea8e8c99
+ *     responses:
+ *       200:
+ *         description: Class retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Invalid ID format
+ *       404:
+ *         description: Class not found
+ *       401:
+ *         description: Unauthorized
  *   put:
  *     summary: Update a class
  *     tags:
@@ -105,9 +133,19 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/ClassInput'
- *           example:
- *             schoolId: 680cf4d5e6e79f54ea8e8c98
- *             name: Grade 9
+ *     responses:
+ *       200:
+ *         description: Class updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Class not found
  *   delete:
  *     summary: Delete a class
  *     tags:
@@ -121,6 +159,15 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         schema:
  *           type: string
  *         example: 680cf4d5e6e79f54ea8e8c99
+ *     responses:
+ *       200:
+ *         description: Class permanently deleted successfully
+ *       400:
+ *         description: Invalid ID format
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Class not found
  */
 const classRouter = Router();
 

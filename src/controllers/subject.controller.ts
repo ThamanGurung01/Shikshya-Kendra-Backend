@@ -4,11 +4,7 @@ import { zodError, SubjectSchema } from '../validators/subject.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-
-const resolveSchoolId = (req: AuthenticatedRequest) => {
-  if (req.role === 'superadmin') return req.body.schoolId;
-  return req.schoolId;
-};
+import { resolveSchoolId } from '../utils/resolve-school-id.util';
 
 export const createSubject = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
@@ -33,9 +29,14 @@ export const createSubject = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
-export const getAllSubjects = async (_: Request, res: Response) => {
+export const getAllSubjects = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const subjects = await SubjectService.getAllSubjects();
+    const schoolId= resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+    const subjects = await SubjectService.getAllSubjects(schoolId);
     if (subjects.length === 0) return sendSuccess(res, 'Subject not found', [], 200);
     return sendSuccess(res, 'Subjects retrieved successfully', subjects, 200);
   } catch (error) {

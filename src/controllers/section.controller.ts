@@ -4,11 +4,7 @@ import { zodError, SectionSchema } from '../validators/section.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-
-const resolveSchoolId = (req: AuthenticatedRequest) => {
-  if (req.role === 'superadmin') return req.body.schoolId;
-  return req.schoolId;
-};
+import { resolveSchoolId } from '../utils/resolve-school-id.util';
 
 export const createSection = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
