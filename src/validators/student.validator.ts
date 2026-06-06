@@ -1,6 +1,7 @@
 import {Types} from 'mongoose';
 import {z,ZodError} from 'zod';
 import { userSchema } from './user.validator';
+import { StudentEnrollmentSchema } from './student-enrollment.model';
 
 const studentSchema=z.object({
     address:z.string().min(5,"Address must be at least 5 characters long"),
@@ -9,8 +10,9 @@ const studentSchema=z.object({
     school_id:z.string().refine(val=>Types.ObjectId.isValid(val),"Invalid school ID format"),
     user_id:z.instanceof(Types.ObjectId).optional().refine(v=>v!==undefined),
 })
-
 export const studentCreate=studentSchema.extend(userSchema.shape);
+export const studentFullSchema=studentCreate.extend(StudentEnrollmentSchema.shape);
+
 export const zodError=(parsedError:ZodError)=>{
     const tree=z.treeifyError(parsedError);
     return tree.errors;

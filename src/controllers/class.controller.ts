@@ -26,16 +26,20 @@ export const createClass = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const createdClass = await ClassService.createClass(parsed.data);
-    return sendSuccess(res, 'Class created successfully', createdClass, 201);
+    const sectionCount = await ClassService.getClassesByClassIds(createdClass._id.toString());
+    const responseData={...createdClass,sectionCount};
+    return sendSuccess(res, 'Class created successfully', responseData, 201);
   } catch (error) {
     console.error(error);
     return sendError(res, 'Internal Server Error', undefined, 500);
   }
 };
 
-export const getAllClasses = async (_: Request, res: Response) => {
+export const getAllClasses = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const classes = await ClassService.getAllClasses();
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res,'School ID is required',undefined,400);
+    const classes = await ClassService.getAllClasses(schoolId);
     if (classes.length === 0) return sendSuccess(res, 'Class not found', [], 200);
     return sendSuccess(res, 'Classes retrieved successfully', classes, 200);
   } catch (error) {
