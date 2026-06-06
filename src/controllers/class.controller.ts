@@ -26,9 +26,7 @@ export const createClass = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const createdClass = await ClassService.createClass(parsed.data);
-    const sectionCount = await ClassService.getClassesByClassIds(createdClass._id.toString());
-    const responseData={...createdClass,sectionCount};
-    return sendSuccess(res, 'Class created successfully', responseData, 201);
+    return sendSuccess(res, 'Class created successfully', createdClass, 201);
   } catch (error) {
     console.error(error);
     return sendError(res, 'Internal Server Error', undefined, 500);
