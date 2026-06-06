@@ -11,11 +11,11 @@ export const authorize=(allowedRoles:string[])=>{
         const user=await userService.getUserById(userId);
         if(!user) return sendError(res,"UnAuthenticated",undefined,401);
         if(!allowedRoles.includes(user.role)) return sendError(res,"Forbidden",undefined,403);
-        req.role=user.role
-        if(user.role!=="superadmin"){
-            const schoolId=await School.findOne({owner_id:userId}).select('_id');
-            if(!schoolId) return sendError(res,"Associated school not found",undefined,404);
-            req.schoolId=schoolId?.toString();
+        req.role = user.role;
+        if (user.role !== "superadmin") {
+            const schoolDoc = await School.findOne({ owner_id: userId }).select('_id').lean();
+            if (!schoolDoc) return sendError(res, "Associated school not found", undefined, 404);
+            req.schoolId = schoolDoc._id.toString();
         }
         next();
     }
