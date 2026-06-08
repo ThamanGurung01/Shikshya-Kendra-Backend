@@ -72,12 +72,14 @@ export const updateClass = async (req: AuthenticatedRequest, res: Response) => {
     const currentClass = await ClassService.getClassById(id);
     if (!currentClass) return sendError(res, 'Class not found', undefined, 404);
 
-    const schoolId = req.role === 'superadmin'
-      ? req.body.schoolId ?? currentClass.schoolId.toString()
-      : req.schoolId ?? currentClass.schoolId.toString();
+    const schoolId = req.schoolId;
     if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(schoolId)) {
       return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (currentClass.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
     }
 
     const parsed = ClassSchema.safeParse({ ...req.body, schoolId });
@@ -87,7 +89,7 @@ export const updateClass = async (req: AuthenticatedRequest, res: Response) => {
       return sendError(res, 'Validation failed', tree, 400);
     }
 
-    const updatedClass = await ClassService.updateClass(id, parsed.data);
+    const updatedClass = await ClassService.updateClassBySchool(id, schoolId, parsed.data);
     if (!updatedClass) return sendError(res, 'Class not found', undefined, 404);
     return sendSuccess(res, 'Class updated successfully', updatedClass, 200);
   } catch (error) {
@@ -96,14 +98,21 @@ export const updateClass = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
-export const hardDeleteClass = async (req: Request, res: Response) => {
+export const hardDeleteClass = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
-    const classItem = await ClassService.hardDeleteClass(id);
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
+    const currentClass = await ClassService.getClassById(id);
+    if (!currentClass) return sendError(res, 'Class not found', undefined, 404);
+    if (currentClass.schoolId.toString() !== req.schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
+    const classItem = await ClassService.hardDeleteClassBySchool(id, req.schoolId);
     if (!classItem) return sendError(res, 'Class not found', undefined, 404);
     return sendSuccess(res, 'Class permanently deleted successfully', classItem, 200);
   } catch (error) {

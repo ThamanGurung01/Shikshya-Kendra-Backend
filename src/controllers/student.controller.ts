@@ -12,8 +12,9 @@ import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 export const createStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     if(!req.userId) return sendError(res,"Unauthorized",undefined,401);
+    if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     //validation using zod
-    const parsed=studentCreate.safeParse(req.body);
+    const parsed=studentCreate.safeParse({...req.body, school_id: req.schoolId});
     console.log("Parsed data:", parsed);
     if(!parsed.success) {
   const tree=zodError(parsed.error);
@@ -51,9 +52,10 @@ sendError(res,"Internal Server Error",undefined,500);
 }
 }
 //get all students
-export const getAllStudents=async(_:Request,res:Response)=>{
+export const getAllStudents=async(req:AuthenticatedRequest,res:Response)=>{
 try{
-    const students=await studentService.getAllStudents();
+    if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+    const students=await studentService.getAllStudentsBySchool(req.schoolId);
     if(students.length===0) return sendSuccess(res,"Student not found",[],200);
     sendSuccess(res, "Students retrieved successfully", students, 200);
 }catch(error){
@@ -76,14 +78,19 @@ try{
 sendError(res,"Internal Server Error",undefined,500);
 }}
 //update student
-export const updateStudent=async(req:Request,res:Response)=>{
+export const updateStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return sendError(res,"ID is required",undefined,400);
     if (!Types.ObjectId.isValid(id)) {
     return sendError(res,"Invalid ID format",undefined,400);
     }
-    const parsed=studentCreate.safeParse(req.body);
+        if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+        const currentStudent=await studentService.getStudentById(id);
+        if(!currentStudent) return sendError(res,'Student not found',undefined,404);
+        if(currentStudent.school_id.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+
+        const parsed=studentCreate.safeParse({...req.body, school_id: req.schoolId});
 if(!parsed.success) {
   const tree=zodError(parsed.error);
   return sendError(res,"Validation failed",tree,400);}
@@ -91,7 +98,7 @@ if(!parsed.success) {
     
     // Check for duplicate email if email is being updated
     if(parsedData.email) {
-        const existingUser=await userService.getUserById(id);
+        const existingUser=await userService.getUserByEmail(parsedData.email,currentStudent.user_id.toString());
         if(existingUser) {
             return sendError(res,"Email already exists",undefined,409);
         }
@@ -103,9 +110,9 @@ if(!parsed.success) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
     if(Object.keys(userUpdateData).length > 0) {
-        await userService.updateUser(id, userUpdateData);
+        await userService.updateUser(currentStudent.user_id.toString(), userUpdateData);
     }
-    const student=await studentService.updateStudent(id,parsedData);
+    const student=await studentService.updateStudentBySchool(id,req.schoolId,parsedData);
     if(!student) return sendError(res,"Student not found",undefined,404);
     sendSuccess(res, "Student updated successfully", student, 200);
 }catch(error){
@@ -113,16 +120,21 @@ if(!parsed.success) {
 sendError(res,"Internal Server Error",undefined,500);
 }}
 //hard delete student
-export const hardDeleteStudent=async(req:Request,res:Response)=>{
+export const hardDeleteStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return sendError(res,"ID is required",undefined,400);
     if (!Types.ObjectId.isValid(id)) {
     return sendError(res,"Invalid ID format",undefined,400);
     }
-    const student=await studentService.hardDeleteStudent(id);
+    if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+    const currentStudent=await studentService.getStudentById(id);
+    if(!currentStudent) return sendError(res,'Student not found',undefined,404);
+    if(currentStudent.school_id.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+
+    const student=await studentService.hardDeleteStudentBySchool(id,req.schoolId);
     if(!student) return sendError(res,"Student not found",undefined,404);
-    const user=await userService.hardDeleteUser(student._id.toString());
+    const user=await userService.hardDeleteUser(student.user_id.toString());
     if(!user) return sendError(res,"Associated user not found",undefined,404);
     sendSuccess(res, "Student permanently deleted successfully", student, 200);
 }catch(error){

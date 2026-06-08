@@ -29,9 +29,10 @@ export const createSection = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
-export const getAllSections = async (_: Request, res: Response) => {
+export const getAllSections = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const sections = await SectionService.getAllSections();
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
+    const sections = await SectionService.getAllSectionsBySchool(req.schoolId);
     if (sections.length === 0) return sendSuccess(res, 'Section not found', [], 200);
     return sendSuccess(res, 'Sections retrieved successfully', sections, 200);
   } catch (error) {
@@ -39,7 +40,18 @@ export const getAllSections = async (_: Request, res: Response) => {
     return sendError(res, 'Internal Server Error', undefined, 500);
   }
 };
-
+export const getSectionsByClassId = async (req: Request, res: Response) => {
+try{
+    const { classId } = req.params;
+    if (!classId || Array.isArray(classId)) return sendError(res, 'Class ID is required', undefined, 400);
+    const sections = await SectionService.getSectionsByClassId(classId);
+    if (sections.length === 0) return sendSuccess(res, 'No sections found for the given class', [], 200);
+    return sendSuccess(res, 'Sections retrieved successfully', sections, 200);
+}catch(error){
+    console.error(error);
+    return sendError(res, 'Internal Server Error', undefined, 500);
+}
+}
 export const getSectionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -67,12 +79,14 @@ export const updateSection = async (req: AuthenticatedRequest, res: Response) =>
     const currentSection = await SectionService.getSectionById(id);
     if (!currentSection) return sendError(res, 'Section not found', undefined, 404);
 
-    const schoolId = req.role === 'superadmin'
-      ? req.body.schoolId ?? currentSection.schoolId.toString()
-      : req.schoolId ?? currentSection.schoolId.toString();
+    const schoolId = req.schoolId;
     if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(schoolId)) {
       return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (currentSection.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
     }
 
     const parsed = SectionSchema.safeParse({ ...req.body, schoolId });
@@ -82,7 +96,7 @@ export const updateSection = async (req: AuthenticatedRequest, res: Response) =>
       return sendError(res, 'Validation failed', tree, 400);
     }
 
-    const updatedSection = await SectionService.updateSection(id, parsed.data);
+    const updatedSection = await SectionService.updateSectionBySchool(id, schoolId, parsed.data);
     if (!updatedSection) return sendError(res, 'Section not found', undefined, 404);
     return sendSuccess(res, 'Section updated successfully', updatedSection, 200);
   } catch (error) {
@@ -91,14 +105,23 @@ export const updateSection = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
-export const hardDeleteSection = async (req: Request, res: Response) => {
+export const hardDeleteSection = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
-    const section = await SectionService.hardDeleteSection(id);
+
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
+    const currentSection = await SectionService.getSectionById(id);
+    if (!currentSection) return sendError(res, 'Section not found', undefined, 404);
+    if (currentSection.schoolId.toString() !== req.schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
+    const section = await SectionService.hardDeleteSectionBySchool(id, req.schoolId);
+
     if (!section) return sendError(res, 'Section not found', undefined, 404);
     return sendSuccess(res, 'Section permanently deleted successfully', section, 200);
   } catch (error) {

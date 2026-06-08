@@ -171,10 +171,10 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  */
 const classRouter = Router();
 
-classRouter.post('/', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), createClass);
-classRouter.get('/', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), getAllClasses);
+classRouter.post('/', authenticate, authorize([Role.OADMIN]), createClass);
+classRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllClasses);
 classRouter.get('/:id', authenticate, getClassById);
-classRouter.put('/:id', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), updateClass);
-classRouter.delete('/:id', authenticate, authorize([Role.SUPERADMIN]), hardDeleteClass);
+classRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateClass);
+classRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteClass);
 
 export default classRouter;

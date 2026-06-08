@@ -10,19 +10,20 @@ import { resolveSchoolId } from '../utils/resolve-school-id.util';
 export const createAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
   try {
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
     const parsed = AcademicYearSchema.safeParse(req.body);
     if (!parsed.success) {
       const tree = zodError(parsed.error);
       return sendError(res, 'Validation failed', tree, 400);
     }
     const parsedData = parsed.data;
-    const AcademicYear = await AcademicYearService.createAcademicYear(parsedData,{
-            schoolId: req.role !== 'superadmin' ? req.schoolId : '680cf4d5e6e79f54ea8e8c98',
-    });
+        const AcademicYear = await AcademicYearService.createAcademicYear(parsedData,{
+          schoolId: req.schoolId,
+        });
 
     return sendSuccess(
       res,
-      'OAdmin for AcademicYear created successfully',
+      'AcademicYear created successfully',
       {
          name: AcademicYear.name,
          startDate: AcademicYear.startDate,
@@ -62,8 +63,17 @@ export const getAcademicYearById = async (req: Request, res: Response) => {
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
     const AcademicYear = await AcademicYearService.getAcademicYearById(id);
     if (!AcademicYear) return sendSuccess(res, 'AcademicYear not found', {}, 200);
+    if (AcademicYear.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     sendSuccess(res, 'AcademicYear retrieved successfully', AcademicYear, 200);
   } catch (error) {
     console.error(error);
@@ -79,6 +89,17 @@ export const updateAcademicYear = async (req: AuthenticatedRequest, res: Respons
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+    const currentAcademicYear = await AcademicYearService.getAcademicYearById(id);
+    if (!currentAcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
+    if (currentAcademicYear.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     const parsed = AcademicYearSchema.safeParse(req.body);
     if (!parsed.success) {
       const tree = zodError(parsed.error);
@@ -86,7 +107,7 @@ export const updateAcademicYear = async (req: AuthenticatedRequest, res: Respons
       return sendError(res, 'Validation failed', tree, 400);
     }
     const parsedData = parsed.data;
-    const AcademicYear = await AcademicYearService.updateAcademicYear(id, parsedData);
+    const AcademicYear = await AcademicYearService.updateAcademicYear(id, schoolId, parsedData);
     if (!AcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
     sendSuccess(res, 'AcademicYear updated successfully', AcademicYear, 200);
   } catch (error) {
@@ -96,14 +117,24 @@ export const updateAcademicYear = async (req: AuthenticatedRequest, res: Respons
 };
 
 // ─── Hard Delete AcademicYear ──────────────────────────────────────────────────────
-export const hardDeleteAcademicYear = async (req: Request, res: Response) => {
+export const hardDeleteAcademicYear = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
-    const AcademicYear = await AcademicYearService.hardDeleteAcademicYear(id);
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+    const currentAcademicYear = await AcademicYearService.getAcademicYearById(id);
+    if (!currentAcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
+    if (currentAcademicYear.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+    const AcademicYear = await AcademicYearService.hardDeleteAcademicYear(id, schoolId);
     if (!AcademicYear) return sendError(res, 'AcademicYear not found', undefined, 404);
     sendSuccess(res, 'AcademicYear permanently deleted successfully', AcademicYear, 200);
   } catch (error) {

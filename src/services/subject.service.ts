@@ -20,6 +20,17 @@ export const updateSubject = async (id: string, data: ISubjectInput) => {
   }).lean();
 };
 
+export const updateSubjectBySchool = async (id: string, schoolId: string, data: ISubjectInput) => {
+  return await SubjectModel.findOneAndUpdate({ _id: id, schoolId }, data, {
+    returnDocument: 'after',
+    runValidators: true,
+  }).lean();
+};
+
 export const hardDeleteSubject = async (id: string) => {
   return await SubjectModel.findByIdAndDelete(id);
+};
+
+export const hardDeleteSubjectBySchool = async (id: string, schoolId: string) => {
+  return await SubjectModel.findOneAndDelete({ _id: id, schoolId });
 };
