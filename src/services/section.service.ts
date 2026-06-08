@@ -17,8 +17,8 @@ export const getSectionById = async (id: string) => {
   return await SectionModel.findById(id).lean();
 };
 //get by classId
-export const getSectionsByClassId=async(classId:string)=>{
-    return await SectionModel.find({classId:classId}).limit(20).sort({createdAt:-1});
+export const getSectionsByClassId=async(classId:string,schoolId:string)=>{
+    return await SectionModel.find({classId:classId,schoolId:schoolId}).limit(20).sort({createdAt:-1});
 }
 export const updateSection = async (id: string, data: ISectionInput) => {
   return await SectionModel.findByIdAndUpdate(id, data, {

@@ -54,6 +54,16 @@ export const getSubjectById = async (req: Request, res: Response) => {
     }
     const subject = await SubjectService.getSubjectById(id);
     if (!subject) return sendSuccess(res, 'Subject not found', {}, 200);
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (subject.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     return sendSuccess(res, 'Subject retrieved successfully', subject, 200);
   } catch (error) {
     console.error(error);

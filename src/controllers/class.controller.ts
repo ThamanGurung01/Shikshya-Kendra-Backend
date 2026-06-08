@@ -54,6 +54,17 @@ export const getClassById = async (req: Request, res: Response) => {
     }
     const classItem = await ClassService.getClassById(id);
     if (!classItem) return sendSuccess(res, 'Class not found', {}, 200);
+
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (classItem.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     return sendSuccess(res, 'Class retrieved successfully', classItem, 200);
   } catch (error) {
     console.error(error);

@@ -44,7 +44,14 @@ export const getSectionsByClassId = async (req: Request, res: Response) => {
 try{
     const { classId } = req.params;
     if (!classId || Array.isArray(classId)) return sendError(res, 'Class ID is required', undefined, 400);
-    const sections = await SectionService.getSectionsByClassId(classId);
+
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    const sections = await SectionService.getSectionsByClassId(classId, schoolId);
     if (sections.length === 0) return sendSuccess(res, 'No sections found for the given class', [], 200);
     return sendSuccess(res, 'Sections retrieved successfully', sections, 200);
 }catch(error){
@@ -61,6 +68,17 @@ export const getSectionById = async (req: Request, res: Response) => {
     }
     const section = await SectionService.getSectionById(id);
     if (!section) return sendSuccess(res, 'Section not found', {}, 200);
+
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (section.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     return sendSuccess(res, 'Section retrieved successfully', section, 200);
   } catch (error) {
     console.error(error);
