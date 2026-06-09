@@ -54,6 +54,16 @@ export const getSubjectById = async (req: Request, res: Response) => {
     }
     const subject = await SubjectService.getSubjectById(id);
     if (!subject) return sendSuccess(res, 'Subject not found', {}, 200);
+    const schoolId = resolveSchoolId(req);
+    if(!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(schoolId)) {
+      return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (subject.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
     return sendSuccess(res, 'Subject retrieved successfully', subject, 200);
   } catch (error) {
     console.error(error);
@@ -72,12 +82,14 @@ export const updateSubject = async (req: AuthenticatedRequest, res: Response) =>
     const currentSubject = await SubjectService.getSubjectById(id);
     if (!currentSubject) return sendError(res, 'Subject not found', undefined, 404);
 
-    const schoolId = req.role === 'superadmin'
-      ? req.body.schoolId ?? currentSubject.schoolId.toString()
-      : req.schoolId ?? currentSubject.schoolId.toString();
+    const schoolId = req.schoolId;
     if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(schoolId)) {
       return sendError(res, 'Invalid school ID format', undefined, 400);
+    }
+
+    if (currentSubject.schoolId.toString() !== schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
     }
 
     const parsed = SubjectSchema.safeParse({ ...req.body, schoolId });
@@ -87,7 +99,7 @@ export const updateSubject = async (req: AuthenticatedRequest, res: Response) =>
       return sendError(res, 'Validation failed', tree, 400);
     }
 
-    const updatedSubject = await SubjectService.updateSubject(id, parsed.data);
+    const updatedSubject = await SubjectService.updateSubjectBySchool(id, schoolId, parsed.data);
     if (!updatedSubject) return sendError(res, 'Subject not found', undefined, 404);
     return sendSuccess(res, 'Subject updated successfully', updatedSubject, 200);
   } catch (error) {
@@ -96,14 +108,21 @@ export const updateSubject = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
-export const hardDeleteSubject = async (req: Request, res: Response) => {
+export const hardDeleteSubject = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
     if (!Types.ObjectId.isValid(id)) {
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
-    const subject = await SubjectService.hardDeleteSubject(id);
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
+    const currentSubject = await SubjectService.getSubjectById(id);
+    if (!currentSubject) return sendError(res, 'Subject not found', undefined, 404);
+    if (currentSubject.schoolId.toString() !== req.schoolId) {
+      return sendError(res, 'Forbidden', undefined, 403);
+    }
+
+    const subject = await SubjectService.hardDeleteSubjectBySchool(id, req.schoolId);
     if (!subject) return sendError(res, 'Subject not found', undefined, 404);
     return sendSuccess(res, 'Subject permanently deleted successfully', subject, 200);
   } catch (error) {

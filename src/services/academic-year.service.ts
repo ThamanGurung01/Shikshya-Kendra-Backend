@@ -1,5 +1,4 @@
 import { AcademicYear } from "../models/academic-year.model";
-import { generateUniqueSlug } from "../utils/slug.util";
 import { IAcademicYearInput } from "../validators/academic-year.validator";
 
 // create
@@ -21,15 +20,14 @@ export const getAcademicYearById = async (id: string) => {
         .lean();
 }
 
-// update — accepts partial update type
-export const updateAcademicYear = async (id: string, data: IAcademicYearInput) => {
-    return await AcademicYear.findByIdAndUpdate(id, data, {
+export const updateAcademicYear = async (id: string, schoolId: string, data: IAcademicYearInput) => {
+    return await AcademicYear.findOneAndUpdate({ _id: id, schoolId }, data, {
         returnDocument: 'after',
         runValidators: true,
     }).lean();
 }
 
 // hard delete
-export const hardDeleteAcademicYear = async (id: string) => {
-    return await AcademicYear.findByIdAndDelete(id);
+export const hardDeleteAcademicYear = async (id: string, schoolId: string) => {
+    return await AcademicYear.findOneAndDelete({ _id: id, schoolId });
 }

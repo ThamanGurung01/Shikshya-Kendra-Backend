@@ -349,9 +349,9 @@ import { authorize } from "../middlewares/role.middleware";
  *         description: Forbidden
  */
 const studentRouter=Router();
-studentRouter.post('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),createStudent);
-studentRouter.get('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),getAllStudents);
+studentRouter.post('/',authenticate,authorize([Role.OADMIN]),createStudent);
+studentRouter.get('/',authenticate,authorize([Role.OADMIN]),getAllStudents);
 studentRouter.get('/:id',authenticate,getStudentById);
-studentRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),updateStudent);
-studentRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN]),hardDeleteStudent);
+studentRouter.put('/:id',authenticate,authorize([Role.OADMIN]),updateStudent);
+studentRouter.delete('/:id',authenticate,authorize([Role.OADMIN]),hardDeleteStudent);
 export default studentRouter

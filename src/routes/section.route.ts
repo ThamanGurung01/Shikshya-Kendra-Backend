@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/role.middleware';
 import Role from '../utils/role.util';
-import { createSection, getAllSections, getSectionById, hardDeleteSection, updateSection } from '../controllers/section.controller';
+import { createSection, getAllSections, getSectionsByClassId, hardDeleteSection, updateSection } from '../controllers/section.controller';
 
 /**
  * @swagger
@@ -128,10 +128,10 @@ import { createSection, getAllSections, getSectionById, hardDeleteSection, updat
  */
 const sectionRouter = Router();
 
-sectionRouter.post('/', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), createSection);
-sectionRouter.get('/', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), getAllSections);
-sectionRouter.get('/:id', authenticate, getSectionById);
-sectionRouter.put('/:id', authenticate, authorize([Role.SUPERADMIN, Role.OADMIN]), updateSection);
-sectionRouter.delete('/:id', authenticate, authorize([Role.SUPERADMIN]), hardDeleteSection);
+sectionRouter.post('/', authenticate, authorize([Role.OADMIN]), createSection);
+sectionRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllSections);
+sectionRouter.get('/:id', authenticate, getSectionsByClassId);
+sectionRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateSection);
+sectionRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteSection);
 
 export default sectionRouter;

@@ -49,6 +49,17 @@ export const updateClass = async (id: string, data: IClassInput) => {
   }).lean();
 };
 
+export const updateClassBySchool = async (id: string, schoolId: string, data: IClassInput) => {
+  return await ClassModel.findOneAndUpdate({ _id: id, schoolId }, data, {
+    returnDocument: 'after',
+    runValidators: true,
+  }).lean();
+};
+
 export const hardDeleteClass = async (id: string) => {
   return await ClassModel.findByIdAndDelete(id);
+};
+
+export const hardDeleteClassBySchool = async (id: string, schoolId: string) => {
+  return await ClassModel.findOneAndDelete({ _id: id, schoolId });
 };
