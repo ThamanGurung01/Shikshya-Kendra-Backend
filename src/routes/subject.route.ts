@@ -11,12 +11,17 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *     SubjectInput:
  *       type: object
  *       required:
- *         - schoolId
+ *         - classId
  *         - name
  *         - code
  *       properties:
  *         schoolId:
  *           type: string
+ *           description: School ID (optional). Resolved from authenticated user context when omitted.
+ *         classId:
+ *           type: string
+ *           description: Class ID to associate this subject with.
+ *           example: 680cf4d5e6e79f54ea8e8c99
  *         name:
  *           type: string
  *           example: Mathematics
@@ -24,7 +29,7 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *           type: string
  *           example: MATH
  *       example:
- *         schoolId: 680cf4d5e6e79f54ea8e8c98
+ *         classId: 680cf4d5e6e79f54ea8e8c99
  *         name: Mathematics
  *         code: MATH
  *     Subject:
@@ -32,8 +37,14 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *       properties:
  *         _id:
  *           type: string
+ *           readOnly: true
  *         schoolId:
  *           type: string
+ *           description: School ID (injected by server)
+ *           readOnly: true
+ *         classId:
+ *           type: string
+ *           description: Associated class ID
  *         name:
  *           type: string
  *         code:
@@ -41,9 +52,11 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           readOnly: true
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *           readOnly: true
  *
  * /api/v1/subject:
  *   post:
@@ -59,7 +72,7 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *           schema:
  *             $ref: '#/components/schemas/SubjectInput'
  *           example:
- *             schoolId: 680cf4d5e6e79f54ea8e8c98
+ *             classId: 680cf4d5e6e79f54ea8e8c99
  *             name: Mathematics
  *             code: MATH
  *     responses:
@@ -110,7 +123,7 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  *           schema:
  *             $ref: '#/components/schemas/SubjectInput'
  *           example:
- *             schoolId: 680cf4d5e6e79f54ea8e8c98
+ *             classId: 680cf4d5e6e79f54ea8e8c99
  *             name: English
  *             code: ENG
  *   delete:
