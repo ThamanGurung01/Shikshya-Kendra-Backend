@@ -11,17 +11,12 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *     ClassInput:
  *       type: object
  *       required:
- *         - schoolId
  *         - name
  *       properties:
- *         schoolId:
- *           type: string
- *           example: 680cf4d5e6e79f54ea8e8c98
  *         name:
  *           type: string
  *           example: Grade 8
  *       example:
- *         schoolId: 680cf4d5e6e79f54ea8e8c98
  *         name: Grade 8
  *     Class:
  *       type: object
@@ -44,6 +39,61 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *     ClassResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: Class retrieved successfully
+ *         data:
+ *           oneOf:
+ *             - $ref: '#/components/schemas/Class'
+ *             - type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Class'
+ *     ClassCreateResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: Class created successfully
+ *         data:
+ *           $ref: '#/components/schemas/Class'
+ *     ValidationErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           example: Validation failed
+ *         errors:
+ *           type: object
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           example: Unauthorized
+ *     MessageResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: Class permanently deleted successfully
  *
  * /api/v1/class:
  *   post:
@@ -64,11 +114,15 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Class'
+ *               $ref: '#/components/schemas/ClassCreateResponse'
  *       400:
- *         description: Validation failed
- *       401:
- *         description: Unauthorized
+ *         description: Request failed (validation, unauthorized, or forbidden)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationErrorResponse'
+ *                 - $ref: '#/components/schemas/ErrorResponse'
  *   get:
  *     summary: Get all classes
  *     tags:
@@ -81,11 +135,18 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Class'
- *       401:
- *         description: Unauthorized
+ *               $ref: '#/components/schemas/ClassResponse'
+ *       400:
+ *         description: Request failed (unauthorized or forbidden)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *
  * /api/v1/class/{id}:
  *   get:
@@ -107,13 +168,13 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Class'
+ *               $ref: '#/components/schemas/ClassResponse'
  *       400:
- *         description: Invalid ID format
- *       404:
- *         description: Class not found
- *       401:
- *         description: Unauthorized
+ *         description: Request failed (invalid ID, unauthorized, or not found)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     summary: Update a class
  *     tags:
@@ -139,13 +200,15 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Class'
+ *               $ref: '#/components/schemas/ClassResponse'
  *       400:
- *         description: Validation failed
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Class not found
+ *         description: Request failed (validation, unauthorized, forbidden, or not found)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationErrorResponse'
+ *                 - $ref: '#/components/schemas/ErrorResponse'
  *   delete:
  *     summary: Delete a class
  *     tags:
@@ -162,12 +225,16 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *     responses:
  *       200:
  *         description: Class permanently deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  *       400:
- *         description: Invalid ID format
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Class not found
+ *         description: Request failed (invalid ID, unauthorized, forbidden, or not found)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 const classRouter = Router();
 
