@@ -142,11 +142,6 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *         description: Forbidden
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *
  * /api/v1/class/{id}:
  *   get:
