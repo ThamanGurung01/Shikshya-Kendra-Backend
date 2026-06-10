@@ -8,9 +8,8 @@
   rollNumber: number;
   promotedFromEnrollmentId?: Types.ObjectId;
   status:"enrolled" | "pending" | "waitlisted" | "dropped" | "completed" | "failed" | "withdrawn" | "cancelled";
-  joinedAt: string;
-  leftAt?: string;
-deletedAt?:Date;
+  joinedAt?: Date;
+  leftAt?: Date;
 };
 export const studentEnrollmentSchema=new Schema<IStudentEnrollment>({
     studentId:{type:Types.ObjectId,ref:'Student',required:true},
@@ -21,9 +20,9 @@ export const studentEnrollmentSchema=new Schema<IStudentEnrollment>({
     rollNumber:{type:Number,required:true},
     promotedFromEnrollmentId:{type:Types.ObjectId,ref:'StudentEnrollment'},
     status:{type:String,enum:["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"],default:"pending",required:true},
-    joinedAt:{type:String,required:true},
-    leftAt:{type:String},
-    deletedAt:{type:Date,default:null}
+    joinedAt:{type:Date},
+    leftAt:{type:Date}
 },{
     timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}
 })
+export const StudentEnrollment = model<IStudentEnrollment>('StudentEnrollment',studentEnrollmentSchema);
