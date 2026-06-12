@@ -43,6 +43,6 @@ app.use('/api/v1/class', classRouter);
 app.use('/api/v1/section', sectionRouter);
 app.use('/api/v1/subject', subjectRouter);
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  res.send('Hello, World222!');
 });
 export default app;

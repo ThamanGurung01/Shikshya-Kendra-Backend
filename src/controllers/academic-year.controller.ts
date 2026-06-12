@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as AcademicYearService from '../services/academic-year.service';
-import { zodError,AcademicYearSchema, IAcademicYearInput } from '../validators/academic-year.validator';
+import { zodError } from '../utils/zod-error.util';
+import { AcademicYearSchema, IAcademicYearInput } from '../validators/academic-year.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';

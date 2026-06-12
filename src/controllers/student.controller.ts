@@ -1,21 +1,26 @@
 import { Request, Response } from 'express';
 import * as studentService from '../services/student.service';
 import * as userService from '../services/user.service';
-import { studentCreate } from '../validators/student.validator';
-import { zodError } from '../validators/student.validator';
-import { IUserInput } from '../validators/user.validator';
-import { Types } from 'mongoose';
+import * as enrollmentService from '../services/student-enrollment.service';
+import * as schoolService from '../services/school.service';
+import { zodError } from '../utils/zod-error.util';
+import { studentCreate, studentFullSchema, studentUpdate } from '../validators/student.validator';
+import mongoose, { Types } from 'mongoose';
+import crypto from 'crypto';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { resolveSchoolId } from '../utils/resolve-school-id.util';
+import { IUserInput } from '../validators/user.validator';
 //create student
 export const createStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     if(!req.userId) return sendError(res,"Unauthorized",undefined,401);
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+    const schoolId=resolveSchoolId(req);
+    if(!schoolId) return sendError(res,'School ID is required',undefined,400);
     //validation using zod
-    const parsed=studentCreate.safeParse({...req.body, school_id: req.schoolId});
-    console.log("Parsed data:", parsed);
+    const parsed=studentFullSchema.safeParse({...req.body,schoolId});
     if(!parsed.success) {
   const tree=zodError(parsed.error);
     return sendError(res,"Validation failed",tree,400);}
@@ -27,25 +32,71 @@ try{
     }
     
     const hashedPassword=await hashPassword(parsedStudentData.password);
-    const user=await userService.createUser({
-        name:parsedStudentData.name,
-        email:parsedStudentData.email,
-        password:hashedPassword,
-        role:"student",
-        ...(parsedStudentData.profileImage && {profileImage:parsedStudentData.profileImage}),
-        is_active:true
-    });
-    const student=await studentService.createStudent({...parsedStudentData, user_id:user._id});
-    return sendSuccess(res,"Student created successfully",{
-        name:user.name,
-        email:user.email,
-        role:user.role,
-        is_active:user.is_active,
-        profileImage:user.profileImage,
-        address:student.address,
-        contact:student.contact,
-        student_email:student.student_email,
-    },201);
+    const session=await mongoose.startSession();
+    session.startTransaction();
+    try{
+        const user=await userService.createUser({
+            name:parsedStudentData.name,
+            email:parsedStudentData.email,
+            password:hashedPassword,
+            role:"student",
+            ...(parsedStudentData.profileImage && {profileImage:parsedStudentData.profileImage}),
+            is_active:true
+        },session);
+        const school=await schoolService.getSchoolById(schoolId);
+        const schoolAcronym=school?.school_name
+            ?.split(/\s+/)
+            .map((w:string)=>w[0]?.toUpperCase())
+            .join("")||"XX";
+        const nameParts=parsedStudentData.name.trim().split(/\s+/);
+        const initials=nameParts.map((w:string)=>w[0]?.toUpperCase()).join("");
+        const random=crypto.randomBytes(2).toString("hex").toUpperCase();
+        const admissionNumber=`${schoolAcronym}-${initials}-${random}`;
+        const student=await studentService.createStudent({
+            admissionNumber,
+            address:parsedStudentData.address,
+            gender:parsedStudentData.gender,
+            contact:parsedStudentData.contact,
+            dob:parsedStudentData.dob,
+            ...(parsedStudentData.student_email ? {student_email:parsedStudentData.student_email} : {}),
+            schoolId:schoolId.toString(),
+            userId:user._id.toString(),
+            status:parsedStudentData.status
+        },{},session);
+        const enrollmentStatus=parsedStudentData.studentEnrollmentStatus||"pending";
+        const enrollmentData: enrollmentService.CreateEnrollmentData = {
+            studentId:student._id.toString(),
+            schoolId:schoolId.toString(),
+            academicYearId:parsedStudentData.academicYearId,
+            classId:parsedStudentData.classId,
+            sectionId:parsedStudentData.sectionId,
+            rollNumber:parsedStudentData.rollNumber,
+            ...(parsedStudentData.promotedFromEnrollmentId && {promotedFromEnrollmentId:parsedStudentData.promotedFromEnrollmentId}),
+            studentEnrollmentStatus:enrollmentStatus,
+        };
+        if(enrollmentStatus==="enrolled") enrollmentData.joinedAt=new Date();
+        if(["dropped","completed","failed","withdrawn","cancelled"].includes(enrollmentStatus)){
+            enrollmentData.leftAt=new Date();
+        }
+        await enrollmentService.createStudentEnrollment(enrollmentData,session);
+        await session.commitTransaction();
+        return sendSuccess(res,"Student created successfully",{
+            name:user.name,
+            email:user.email,
+            role:user.role,
+            is_active:user.is_active,
+            profileImage:user.profileImage,
+            admissionNumber:student.admissionNumber,
+            address:student.address,
+            contact:student.contact,
+            student_email:student.student_email,
+        },201);
+    }catch(error){
+        await session.abortTransaction();
+        throw error;
+    }finally{
+        session.endSession();
+    }
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -88,9 +139,9 @@ try{
         if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
         const currentStudent=await studentService.getStudentById(id);
         if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-        if(currentStudent.school_id.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+        if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
-        const parsed=studentCreate.safeParse({...req.body, school_id: req.schoolId});
+        const parsed=studentUpdate.safeParse(req.body);
 if(!parsed.success) {
   const tree=zodError(parsed.error);
   return sendError(res,"Validation failed",tree,400);}
@@ -98,22 +149,59 @@ if(!parsed.success) {
     
     // Check for duplicate email if email is being updated
     if(parsedData.email) {
-        const existingUser=await userService.getUserByEmail(parsedData.email,currentStudent.user_id.toString());
+        const existingUser=await userService.getUserByEmail(parsedData.email,currentStudent.userId.toString());
         if(existingUser) {
             return sendError(res,"Email already exists",undefined,409);
         }
     }
+    // Update user fields
     const userUpdateData: Partial<IUserInput> = {};
-    if(parsedData.name) userUpdateData.name = parsedData.name;
-    if(parsedData.profileImage) userUpdateData.profileImage = parsedData.profileImage;
+    if(parsedData.name !== undefined) userUpdateData.name = parsedData.name;
+    if(parsedData.email !== undefined) userUpdateData.email = parsedData.email;
+    if(parsedData.profileImage !== undefined) userUpdateData.profileImage = parsedData.profileImage;
+    if(parsedData.is_active !== undefined) userUpdateData.is_active = parsedData.is_active;
     if(parsedData.password) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
     if(Object.keys(userUpdateData).length > 0) {
-        await userService.updateUser(currentStudent.user_id.toString(), userUpdateData);
+        await userService.updateUser(currentStudent.userId.toString(), userUpdateData);
     }
-    const student=await studentService.updateStudentBySchool(id,req.schoolId,parsedData);
-    if(!student) return sendError(res,"Student not found",undefined,404);
+    // Update student fields only
+    const studentFields: Record<string, unknown> = {};
+    if(parsedData.address !== undefined) studentFields.address = parsedData.address;
+    if(parsedData.gender !== undefined) studentFields.gender = parsedData.gender;
+    if(parsedData.contact !== undefined) studentFields.contact = parsedData.contact;
+    if(parsedData.dob !== undefined) studentFields.dob = parsedData.dob;
+    if(parsedData.student_email !== undefined) studentFields.student_email = parsedData.student_email;
+    if(parsedData.status !== undefined) studentFields.status = parsedData.status;
+    let student;
+    if(Object.keys(studentFields).length > 0) {
+        student=await studentService.updateStudentBySchool(id,req.schoolId,studentFields as any);
+        if(!student) return sendError(res,"Student not found",undefined,404);
+    } else {
+        student=currentStudent;
+    }
+    // Update enrollment fields
+    const enrollmentFields: Record<string, unknown> = {};
+    if(parsedData.academicYearId !== undefined) enrollmentFields.academicYearId = parsedData.academicYearId;
+    if(parsedData.classId !== undefined) enrollmentFields.classId = parsedData.classId;
+    if(parsedData.sectionId !== undefined) enrollmentFields.sectionId = parsedData.sectionId;
+    if(parsedData.rollNumber !== undefined) enrollmentFields.rollNumber = parsedData.rollNumber;
+    if(parsedData.promotedFromEnrollmentId !== undefined) enrollmentFields.promotedFromEnrollmentId = parsedData.promotedFromEnrollmentId;
+    if(parsedData.studentEnrollmentStatus !== undefined) {
+        enrollmentFields.studentEnrollmentStatus = parsedData.studentEnrollmentStatus;
+        const status=parsedData.studentEnrollmentStatus;
+        if(status==="enrolled") enrollmentFields.joinedAt=new Date();
+        if(["dropped","completed","failed","withdrawn","cancelled"].includes(status)){
+            enrollmentFields.leftAt=new Date();
+        }
+    }
+    if(Object.keys(enrollmentFields).length > 0) {
+        const enrollment=await enrollmentService.getStudentEnrollmentByStudentId(id);
+        if(enrollment) {
+            await enrollmentService.updateStudentEnrollment(enrollment._id.toString(),req.schoolId,enrollmentFields as any);
+        }
+    }
     sendSuccess(res, "Student updated successfully", student, 200);
 }catch(error){
     console.error(error);
@@ -130,11 +218,11 @@ try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const currentStudent=await studentService.getStudentById(id);
     if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-    if(currentStudent.school_id.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+    if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
     const student=await studentService.hardDeleteStudentBySchool(id,req.schoolId);
     if(!student) return sendError(res,"Student not found",undefined,404);
-    const user=await userService.hardDeleteUser(student.user_id.toString());
+    const user=await userService.hardDeleteUser(student.userId.toString());
     if(!user) return sendError(res,"Associated user not found",undefined,404);
     sendSuccess(res, "Student permanently deleted successfully", student, 200);
 }catch(error){

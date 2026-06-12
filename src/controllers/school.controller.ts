@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
 import * as userService from '../services/user.service';
-import { schoolCreate, schoolUpdate, zodError } from '../validators/school.validator';
+import { zodError } from '../utils/zod-error.util';
+import { schoolCreate, schoolUpdate } from '../validators/school.validator';
 import { IUserInput } from '../validators/user.validator';
 import { Types } from 'mongoose';
 import { hashPassword } from '../utils/hash.util';

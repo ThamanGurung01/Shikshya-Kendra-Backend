@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as SectionService from '../services/section.service';
-import { zodError, SectionSchema } from '../validators/section.validator';
+import { zodError } from '../utils/zod-error.util';
+import { SectionSchema } from '../validators/section.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';

@@ -7,7 +7,7 @@
   sectionId: Types.ObjectId;
   rollNumber: number;
   promotedFromEnrollmentId?: Types.ObjectId;
-  status:"enrolled" | "pending" | "waitlisted" | "dropped" | "completed" | "failed" | "withdrawn" | "cancelled";
+  studentEnrollmentStatus:"enrolled" | "pending" | "waitlisted" | "dropped" | "completed" | "failed" | "withdrawn" | "cancelled";
   joinedAt?: Date;
   leftAt?: Date;
 };
@@ -19,7 +19,7 @@ export const studentEnrollmentSchema=new Schema<IStudentEnrollment>({
     sectionId:{type:Types.ObjectId,ref:'Section',required:true},
     rollNumber:{type:Number,required:true},
     promotedFromEnrollmentId:{type:Types.ObjectId,ref:'StudentEnrollment'},
-    status:{type:String,enum:["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"],default:"pending",required:true},
+    studentEnrollmentStatus:{type:String,enum:["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"],default:"pending",required:true},
     joinedAt:{type:Date},
     leftAt:{type:Date}
 },{

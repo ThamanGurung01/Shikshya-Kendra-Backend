@@ -1,8 +1,17 @@
 import {StudentEnrollment} from '../models/student-enrollment.model';
 import { IStudentEnrollmentInput } from '../validators/student-enrollment.model';
 
-export const createStudentEnrollment = async (data: IStudentEnrollmentInput, others: Object = {}) => {
-  return await StudentEnrollment.create({ ...data, ...others });
+export type CreateEnrollmentData = IStudentEnrollmentInput & {
+  joinedAt?: Date;
+  leftAt?: Date;
+};
+
+export const createStudentEnrollment = async (data: CreateEnrollmentData, session?: any) => {
+  const cleanData = Object.fromEntries(
+    Object.entries(data).filter(([_, v]) => v !== undefined)
+  );
+  const [enrollment] = await StudentEnrollment.create([cleanData], { session });
+  return enrollment!;
 };
 
 export const getAllStudentEnrollments = async (
@@ -22,6 +31,10 @@ export const getAllStudentEnrollments = async (
 
 export const getStudentEnrollmentById = async (id: string) => {
   return await StudentEnrollment.findById(id).lean();
+};
+
+export const getStudentEnrollmentByStudentId = async (studentId: string) => {
+  return await StudentEnrollment.findOne({ studentId }).lean();
 };
 
 export const updateStudentEnrollment = async (id: string, schoolId: string, data: Partial<IStudentEnrollmentInput>) => {

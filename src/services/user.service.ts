@@ -3,8 +3,9 @@ import { User } from "../models/user.model";
 import { IUserInput } from "../validators/user.validator";
 
 //create
-export const createUser=async(data:IUserInput)=>{
-    return await User.create(data);
+export const createUser=async(data:IUserInput, session?: any)=>{
+    const [user] = await User.create([data], { session });
+    return user!;
 }
 //get all
 export const getAllUsers=async()=>{
