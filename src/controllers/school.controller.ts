@@ -70,8 +70,8 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
     // Auto-generate email
       const generatedEmail = await generateSchoolEmail(parsedData.school_name);
 
-
-    const hashedPassword = await hashPassword(parsedData.password);
+    const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
+    const hashedPassword = await hashPassword(defaultPassword);
 
     // ── Create user first, then school. Roll back user if school fails. ──────
     const user = await userService.createUser({

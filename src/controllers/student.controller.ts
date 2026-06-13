@@ -31,7 +31,8 @@ try{
     // Auto-generate email
     const generatedEmail = await generateStudentEmail(parsedStudentData.name,school.school_name);
     
-    const hashedPassword=await hashPassword(parsedStudentData.password);
+    const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
+    const hashedPassword=await hashPassword(defaultPassword);
     const session=await mongoose.startSession();
     session.startTransaction();
     try{

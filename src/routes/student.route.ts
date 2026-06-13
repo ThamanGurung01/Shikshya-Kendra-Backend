@@ -16,7 +16,6 @@ import { authorize } from "../middlewares/role.middleware";
  *         - contact
  *         - dob
  *         - name
- *         - password
  *         - academicYearId
  *         - classId
  *         - sectionId
@@ -49,10 +48,6 @@ import { authorize } from "../middlewares/role.middleware";
  *         name:
  *           type: string
  *           example: Anish Shrestha
- *         password:
- *           type: string
- *           format: password
- *           example: StrongPass123
  *         profileImage:
  *           type: string
  *           format: uri
@@ -358,7 +353,6 @@ import { authorize } from "../middlewares/role.middleware";
  *                   status: active
  *                   student_email: student@example.com
  *                   name: Anish Shrestha
- *                   password: password123
  *                   academicYearId: 680cf4d5e6e79f54ea8e8d00
  *                   classId: 680cf4d5e6e79f54ea8e8d01
  *                   sectionId: 680cf4d5e6e79f54ea8e8d02

@@ -33,7 +33,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         - contact
  *         - school_email
  *         - name
- *         - password
  *       properties:
  *         school_name:
  *           type: string
@@ -71,10 +70,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         name:
  *           type: string
  *           example: School Owner Admin
- *         password:
- *           type: string
- *           format: password
- *           example: StrongPass123
  *     SchoolInput:
  *       type: object
  *       required:
