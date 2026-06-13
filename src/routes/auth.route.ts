@@ -15,7 +15,7 @@ const authRouter=Router();
  *         email:
  *           type: string
  *           format: email
- *           example: oadmin@example.com
+ *           example: oadmin@test.com
  *         password:
  *           type: string
  *           minLength: 6
@@ -118,7 +118,7 @@ const authRouter=Router();
  *           email:
  *            type: string
  *            format: email
- *            example: superadmin@gmail.com
+ *            example: superadmin@test.com
  *           role:
  *            type: string
  *            example: admin

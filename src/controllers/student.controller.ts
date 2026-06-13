@@ -4,7 +4,7 @@ import * as userService from '../services/user.service';
 import * as enrollmentService from '../services/student-enrollment.service';
 import * as schoolService from '../services/school.service';
 import { zodError } from '../utils/zod-error.util';
-import { studentCreate, studentFullSchema, studentUpdate } from '../validators/student.validator';
+import {  studentFullSchema, studentUpdate } from '../validators/student.validator';
 import mongoose, { Types } from 'mongoose';
 import crypto from 'crypto';
 import { hashPassword } from '../utils/hash.util';
@@ -12,6 +12,7 @@ import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
 import { IUserInput } from '../validators/user.validator';
+import {generateStudentEmail } from '../utils/email.util';
 //create student
 export const createStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -25,11 +26,10 @@ try{
   const tree=zodError(parsed.error);
     return sendError(res,"Validation failed",tree,400);}
     const parsedStudentData=parsed.data;
-    //check for duplicate email
-    const existingUser=await userService.getUserByEmail(parsedStudentData.email,req.userId);
-    if(existingUser) {
-        return sendError(res,"Email already exists",undefined,409);
-    }
+    const school=await schoolService.getSchoolById(schoolId);
+    if(!school) return sendError(res,'Associated school not found',undefined,404);
+    // Auto-generate email
+    const generatedEmail = await generateStudentEmail(parsedStudentData.name,school.school_name);
     
     const hashedPassword=await hashPassword(parsedStudentData.password);
     const session=await mongoose.startSession();
@@ -37,7 +37,7 @@ try{
     try{
         const user=await userService.createUser({
             name:parsedStudentData.name,
-            email:parsedStudentData.email,
+            email:generatedEmail,
             password:hashedPassword,
             role:"student",
             ...(parsedStudentData.profileImage && {profileImage:parsedStudentData.profileImage}),
@@ -146,18 +146,9 @@ if(!parsed.success) {
   const tree=zodError(parsed.error);
   return sendError(res,"Validation failed",tree,400);}
     const parsedData=parsed.data;
-    
-    // Check for duplicate email if email is being updated
-    if(parsedData.email) {
-        const existingUser=await userService.getUserByEmail(parsedData.email,currentStudent.userId.toString());
-        if(existingUser) {
-            return sendError(res,"Email already exists",undefined,409);
-        }
-    }
     // Update user fields
     const userUpdateData: Partial<IUserInput> = {};
     if(parsedData.name !== undefined) userUpdateData.name = parsedData.name;
-    if(parsedData.email !== undefined) userUpdateData.email = parsedData.email;
     if(parsedData.profileImage !== undefined) userUpdateData.profileImage = parsedData.profileImage;
     if(parsedData.is_active !== undefined) userUpdateData.is_active = parsedData.is_active;
     if(parsedData.password) {
