@@ -16,6 +16,7 @@ const studentSchema=z.object({
 export const studentCreate=studentSchema.extend(userSchema.shape);
 export const studentFullSchema=studentCreate.extend(StudentEnrollmentSchema.shape);
 export const studentUpdate=z.object({
+    studentName:z.string().min(3,"Name must be at least 3 characters long").optional(),
     address:z.string().min(5,"Address must be at least 5 characters long").optional(),
     gender:z.string().min(1,"Gender is required").optional(),
     contact:z.string().min(10,"Contact number must be at least 10 characters long").optional(),
@@ -33,5 +34,8 @@ export const studentUpdate=z.object({
     promotedFromEnrollmentId:z.string().optional(),
     studentEnrollmentStatus:z.enum(["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"]).optional(),
 });
-export type IStudentInput=z.infer<typeof studentSchema>;
+export type IStudentCreate=z.infer<typeof studentSchema>;
+export interface IStudentInput extends IStudentCreate{
+    studentName:string;
+}
 export type IStudentUpdate=z.infer<typeof studentUpdate>;

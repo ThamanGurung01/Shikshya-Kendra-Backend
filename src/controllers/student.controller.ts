@@ -54,6 +54,7 @@ try{
         const random=crypto.randomBytes(2).toString("hex").toUpperCase();
         const admissionNumber=`${schoolAcronym}-${initials}-${random}`;
         const student=await studentService.createStudent({
+            studentName:parsedStudentData.name,
             admissionNumber,
             address:parsedStudentData.address,
             gender:parsedStudentData.gender,
@@ -71,7 +72,7 @@ try{
             academicYearId:parsedStudentData.academicYearId,
             classId:parsedStudentData.classId,
             sectionId:parsedStudentData.sectionId,
-            rollNumber:parsedStudentData.rollNumber,
+            ...(parsedStudentData.rollNumber && {rollNumber:parsedStudentData.rollNumber}),
             ...(parsedStudentData.promotedFromEnrollmentId && {promotedFromEnrollmentId:parsedStudentData.promotedFromEnrollmentId}),
             studentEnrollmentStatus:enrollmentStatus,
         };
@@ -91,6 +92,7 @@ try{
             address:student.address,
             contact:student.contact,
             student_email:student.student_email,
+            studentName:student.studentName,
         },201);
     }catch(error){
         await session.abortTransaction();

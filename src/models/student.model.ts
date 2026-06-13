@@ -1,6 +1,7 @@
 import {model,Schema,Types} from "mongoose";
 export interface IStudent{
     admissionNumber:string;
+    studentName:string;
     address:string;
     gender:string;
     contact:string;
@@ -14,6 +15,7 @@ export interface IStudent{
     deletedAt?:Date|null;
 }
 const studentSchema=new Schema<IStudent>({
+    studentName:{type:String,required:true},
     admissionNumber:{type:String,required:true,unique:true},
     address:{type:String,required:true},
     gender:{type:String,required:true},
