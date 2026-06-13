@@ -16,7 +16,6 @@ import { authorize } from "../middlewares/role.middleware";
  *         - contact
  *         - dob
  *         - name
- *         - email
  *         - password
  *         - academicYearId
  *         - classId
@@ -50,10 +49,6 @@ import { authorize } from "../middlewares/role.middleware";
  *         name:
  *           type: string
  *           example: Anish Shrestha
- *         email:
- *           type: string
- *           format: email
- *           example: anish@example.com
  *         password:
  *           type: string
  *           format: password
@@ -253,10 +248,6 @@ import { authorize } from "../middlewares/role.middleware";
  *         name:
  *           type: string
  *           example: Anish Shrestha
- *         email:
- *           type: string
- *           format: email
- *           example: anish@example.com
  *         password:
  *           type: string
  *           format: password
@@ -281,18 +272,6 @@ import { authorize } from "../middlewares/role.middleware";
  *           type: boolean
  *           description: User active status
  *           example: true
- *         role:
- *           type: string
- *           description: User role
- *           example: student
- *         schoolId:
- *           type: string
- *           description: School ID
- *           example: 680cf4d5e6e79f54ea8e8c99
- *         userId:
- *           type: string
- *           description: User ID
- *           example: 680cf4d5e6e79f54ea8e8ca0
  *         academicYearId:
  *           type: string
  *           description: Academic year ID for enrollment
@@ -379,7 +358,6 @@ import { authorize } from "../middlewares/role.middleware";
  *                   status: active
  *                   student_email: student@example.com
  *                   name: Anish Shrestha
- *                   email: anish@example.com
  *                   password: password123
  *                   academicYearId: 680cf4d5e6e79f54ea8e8d00
  *                   classId: 680cf4d5e6e79f54ea8e8d01
@@ -567,7 +545,6 @@ import { authorize } from "../middlewares/role.middleware";
  *                   gender: male
  *                   dob: 2005-06-15
  *                   name: Anish Shrestha Updated
- *                   email: anish.updated@example.com
  *                   is_active: true
  *                   status: active
  *                   academicYearId: 680cf4d5e6e79f54ea8e8d00

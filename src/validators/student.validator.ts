@@ -24,7 +24,6 @@ export const studentUpdate=z.object({
     student_email:z.email("Invalid email address").optional(),
     status:z.enum(["active" , "inactive" , "transfered" , "graduated" , "suspended" , "expelled" , "withdrawn"]).optional(),
     name:z.string().min(3,"Name must be at least 3 characters long").optional(),
-    email:z.email("Invalid email address").optional(),
     password:z.string().min(6,"Password must be at least 6 characters long").optional(),
     profileImage:z.string().optional(),
     is_active:z.boolean().optional(),
