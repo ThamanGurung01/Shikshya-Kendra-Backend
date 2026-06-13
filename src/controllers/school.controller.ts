@@ -68,7 +68,7 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
     const parsedData = parsed.data;
 
     // Auto-generate email
-      const generatedEmail = await generateSchoolEmail(parsedData.school_name);
+      const generatedEmail = await generateSchoolEmail(parsedData.name, parsedData.school_name);
 
     const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
     const hashedPassword = await hashPassword(defaultPassword);
