@@ -265,6 +265,8 @@ try{
     if(!student) return sendError(res,"Student not found",undefined,404);
     const user=await userService.hardDeleteUser(student.userId.toString());
     if(!user) return sendError(res,"Associated user not found",undefined,404);
+    const enrollement=await enrollmentService.hardDeleteStudentEnrollment(student._id.toString(),req.schoolId);
+     if(!enrollement) return sendError(res,"Associated enrollment not found",undefined,404);
     sendSuccess(res, "Student permanently deleted successfully", student, 200);
 }catch(error){
     console.error(error);
