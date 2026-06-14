@@ -1,7 +1,8 @@
 import {Request,Response} from "express";
 import {User} from "../models/user.model";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token.util";
-import { LoginSchema,zodError } from "../validators/auth.validator";
+import { zodError } from "../utils/zod-error.util";
+import { LoginSchema } from "../validators/auth.validator";
 import { resCookie } from "../utils/cookie.util";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import { comparePassword } from "../utils/hash.util";

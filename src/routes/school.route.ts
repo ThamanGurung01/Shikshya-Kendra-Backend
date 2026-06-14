@@ -33,8 +33,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         - contact
  *         - school_email
  *         - name
- *         - email
- *         - password
  *       properties:
  *         school_name:
  *           type: string
@@ -72,14 +70,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         name:
  *           type: string
  *           example: School Owner Admin
- *         email:
- *           type: string
- *           format: email
- *           example: oadmin@example.com
- *         password:
- *           type: string
- *           format: password
- *           example: StrongPass123
  *     SchoolInput:
  *       type: object
  *       required:
@@ -415,7 +405,7 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SchoolCreateInput'
+ *             $ref: '#/components/schemas/SchoolInput'
  *     responses:
  *       200:
  *         description: School updated successfully

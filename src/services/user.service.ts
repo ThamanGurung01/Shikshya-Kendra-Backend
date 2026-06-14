@@ -2,9 +2,16 @@ import { Types } from "mongoose";
 import { User } from "../models/user.model";
 import { IUserInput } from "../validators/user.validator";
 
+interface IUserCreate extends IUserInput {
+email?: string;
+}
+interface IUserUpdate extends Partial<IUserInput> {
+email?: string;
+}
 //create
-export const createUser=async(data:IUserInput)=>{
-    return await User.create(data);
+export const createUser=async(data:IUserCreate, session?: any)=>{
+    const [user] = await User.create([data], { session });
+    return user!;
 }
 //get all
 export const getAllUsers=async()=>{
@@ -19,7 +26,7 @@ export const getUserByEmail=async(email:string,currentId:string)=>{
     return await User.findOne({email, _id: { $ne: currentId }});
 }
 //update
-export const updateUser=async(id:string,data:Partial<IUserInput>)=>{
+export const updateUser=async(id:string,data:IUserUpdate)=>{
     return await User.findByIdAndUpdate(id, data, {returnDocument:'after',runValidators: true});
 }
 // hard delete

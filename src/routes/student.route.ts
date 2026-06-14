@@ -12,63 +12,145 @@ import { authorize } from "../middlewares/role.middleware";
  *       type: object
  *       required:
  *         - address
+ *         - gender
  *         - contact
- *         - school_id
+ *         - dob
  *         - name
- *         - email
- *         - password
+ *         - academicYearId
+ *         - classId
+ *         - sectionId
+ *         - rollNumber
  *       properties:
+ *         admissionNumber:
+ *           type: string
+ *           example: SK-AS-A3F2
  *         address:
  *           type: string
  *           example: Kathmandu, Nepal
+ *         gender:
+ *           type: string
+ *           enum:
+ *             - male
+ *             - female
+ *             - other
+ *           example: male
  *         contact:
  *           type: string
  *           example: 9800000000
+ *         dob:
+ *           type: string
+ *           format: date
+ *           example: 2005-06-15
  *         student_email:
  *           type: string
  *           format: email
  *           example: student@example.com
- *         school_id:
- *           type: string
- *           example: 680cf4d5e6e79f54ea8e8c99
  *         name:
  *           type: string
  *           example: Anish Shrestha
- *         email:
- *           type: string
- *           format: email
- *           example: anish@example.com
- *         password:
- *           type: string
- *           format: password
- *           example: StrongPass123
  *         profileImage:
  *           type: string
  *           format: uri
  *           nullable: true
  *           example: https://cdn.example.com/profile-images/anish.png
+ *         academicYearId:
+ *           type: string
+ *           description: Academic year ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d00
+ *         classId:
+ *           type: string
+ *           description: Class ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d01
+ *         sectionId:
+ *           type: string
+ *           description: Section ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d02
+ *         rollNumber:
+ *           type: number
+ *           description: Roll number for enrollment
+ *           example: 1
+ *         promotedFromEnrollmentId:
+ *           type: string
+ *           nullable: true
+ *           description: Previous enrollment ID if promoted
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Existing parent ID (if not provided, parent will be created from request body fields)
+ *           example: 680cf4d5e6e79f54ea8e8d10
+ *         status:
+ *           type: string
+ *           enum:
+ *             - enrolled
+ *             - pending
+ *             - waitlisted
+ *             - dropped
+ *             - completed
+ *             - failed
+ *             - withdrawn
+ *             - cancelled
+ *           default: pending
+ *           description: Enrollment status
+ *         is_active:
+ *           type: boolean
+ *           description: User active status
+ *           example: true
+ *         role:
+ *           type: string
+ *           description: User role
+ *           example: student
+ *         userId:
+ *           type: string
+ *           description: User ID (set server-side)
+ *           example: 680cf4d5e6e79f54ea8e8ca0
  *     Student:
  *       type: object
  *       properties:
  *         _id:
  *           type: string
  *           example: 680cf4d5e6e79f54ea8e8ca1
+ *         admissionNumber:
+ *           type: string
+ *           example: STU-2026-001
  *         address:
  *           type: string
  *           example: Kathmandu, Nepal
+ *         gender:
+ *           type: string
+ *           example: male
  *         contact:
  *           type: string
  *           example: 9800000000
+ *         dob:
+ *           type: string
+ *           format: date
+ *           example: 2005-06-15
  *         student_email:
  *           type: string
  *           format: email
  *           example: student@example.com
- *         school_id:
+ *         schoolId:
  *           type: string
  *           example: 680cf4d5e6e79f54ea8e8c99
- *         user_id:
+ *         userId:
  *           type: string
  *           example: 680cf4d5e6e79f54ea8e8ca0
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Parent ID (populated with parent data)
+ *           example: 680cf4d5e6e79f54ea8e8d10
+ *         status:
+ *           type: string
+ *           enum:
+ *             - active
+ *             - inactive
+ *             - transfered
+ *             - graduated
+ *             - suspended
+ *             - expelled
+ *             - withdrawn
+ *           example: active
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -102,6 +184,9 @@ import { authorize } from "../middlewares/role.middleware";
  *           type: string
  *           format: uri
  *           nullable: true
+ *         admissionNumber:
+ *           type: string
+ *           example: SK-AS-A3F2
  *         address:
  *           type: string
  *           example: Kathmandu, Nepal
@@ -138,6 +223,97 @@ import { authorize } from "../middlewares/role.middleware";
  *             - type: array
  *               items:
  *                 $ref: '#/components/schemas/Student'
+ *     StudentUpdateInput:
+ *       type: object
+ *       properties:
+ *         admissionNumber:
+ *           type: string
+ *           example: STU-2026-001
+ *         address:
+ *           type: string
+ *           example: Kathmandu, Nepal
+ *         gender:
+ *           type: string
+ *           enum:
+ *             - male
+ *             - female
+ *             - other
+ *           example: male
+ *         contact:
+ *           type: string
+ *           example: 9800000000
+ *         dob:
+ *           type: string
+ *           format: date
+ *           example: 2005-06-15
+ *         student_email:
+ *           type: string
+ *           format: email
+ *           example: student@example.com
+ *         name:
+ *           type: string
+ *           example: Anish Shrestha
+ *         password:
+ *           type: string
+ *           format: password
+ *           example: StrongPass123
+ *         profileImage:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/profile-images/anish.png
+ *         status:
+ *           type: string
+ *           enum:
+ *             - active
+ *             - inactive
+ *             - transfered
+ *             - graduated
+ *             - suspended
+ *             - expelled
+ *             - withdrawn
+ *           example: active
+ *         is_active:
+ *           type: boolean
+ *           description: User active status
+ *           example: true
+ *         academicYearId:
+ *           type: string
+ *           description: Academic year ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d00
+ *         classId:
+ *           type: string
+ *           description: Class ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d01
+ *         sectionId:
+ *           type: string
+ *           description: Section ID for enrollment
+ *           example: 680cf4d5e6e79f54ea8e8d02
+ *         rollNumber:
+ *           type: number
+ *           description: Roll number for enrollment
+ *           example: 1
+ *         promotedFromEnrollmentId:
+ *           type: string
+ *           nullable: true
+ *           description: Previous enrollment ID if promoted
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Parent ID to associate with student
+ *           example: 680cf4d5e6e79f54ea8e8d10
+ *         studentEnrollmentStatus:
+ *           type: string
+ *           enum:
+ *             - enrolled
+ *             - pending
+ *             - waitlisted
+ *             - dropped
+ *             - completed
+ *             - failed
+ *             - withdrawn
+ *             - cancelled
+ *           description: Enrollment status
  *     ValidationErrorResponse:
  *       type: object
  *       properties:
@@ -158,6 +334,15 @@ import { authorize } from "../middlewares/role.middleware";
  *         message:
  *           type: string
  *           example: Student permanently deleted successfully
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           example: Student not found
  *
  * /api/v1/student:
  *   post:
@@ -172,6 +357,23 @@ import { authorize } from "../middlewares/role.middleware";
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/StudentInput'
+ *           examples:
+ *               createRequest:
+ *                 summary: Create student request
+ *                 value:
+ *                   address: Kathmandu, Nepal
+ *                   gender: male
+ *                   contact: "9800000000"
+ *                   dob: 2005-06-15
+ *                   status: active
+ *                   student_email: student@example.com
+ *                   name: Anish Shrestha
+ *                   academicYearId: 680cf4d5e6e79f54ea8e8d00
+ *                   classId: 680cf4d5e6e79f54ea8e8d01
+ *                   sectionId: 680cf4d5e6e79f54ea8e8d02
+ *                   rollNumber: 1
+ *                   parentId: 680cf4d5e6e79f54ea8e8d10
+ *                   studentEnrollmentStatus: enrolled
  *     responses:
  *       201:
  *         description: Student created successfully
@@ -191,6 +393,7 @@ import { authorize } from "../middlewares/role.middleware";
  *                     role: student
  *                     is_active: true
  *                     profileImage: null
+ *                     admissionNumber: SK-AS-A3F2
  *                     address: Kathmandu, Nepal
  *                     contact: 9800000000
  *                     student_email: student@example.com
@@ -202,8 +405,22 @@ import { authorize } from "../middlewares/role.middleware";
  *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *   get:
  *     summary: Get all students
  *     tags:
@@ -225,11 +442,13 @@ import { authorize } from "../middlewares/role.middleware";
  *                   message: Students retrieved successfully
  *                   data:
  *                     - _id: 680cf4d5e6e79f54ea8e8ca1
+ *                       admissionNumber: STU-2026-001
  *                       address: Kathmandu, Nepal
+ *                       gender: male
  *                       contact: 9800000000
+ *                       dob: 2005-06-15
  *                       student_email: student@example.com
- *                       school_id: 680cf4d5e6e79f54ea8e8c99
- *                       user_id: 680cf4d5e6e79f54ea8e8ca0
+ *                       status: active
  *                       createdAt: 2026-04-27T10:45:00.000Z
  *                       updatedAt: 2026-04-27T10:45:00.000Z
  *               notFound:
@@ -240,6 +459,10 @@ import { authorize } from "../middlewares/role.middleware";
  *                   data: []
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *
  * /api/v1/student/{id}:
  *   get:
@@ -252,6 +475,7 @@ import { authorize } from "../middlewares/role.middleware";
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Student ID
  *         schema:
  *           type: string
  *     responses:
@@ -269,11 +493,13 @@ import { authorize } from "../middlewares/role.middleware";
  *                   message: Student retrieved successfully
  *                   data:
  *                     _id: 680cf4d5e6e79f54ea8e8ca1
+ *                     admissionNumber: STU-2026-001
  *                     address: Kathmandu, Nepal
+ *                     gender: male
  *                     contact: 9800000000
+ *                     dob: 2005-06-15
  *                     student_email: student@example.com
- *                     school_id: 680cf4d5e6e79f54ea8e8c99
- *                     user_id: 680cf4d5e6e79f54ea8e8ca0
+ *                     status: active
  *                     createdAt: 2026-04-27T10:45:00.000Z
  *                     updatedAt: 2026-04-27T10:45:00.000Z
  *                     deletedAt: null
@@ -285,10 +511,22 @@ import { authorize } from "../middlewares/role.middleware";
  *                   data: {}
  *       400:
  *         description: ID is required or invalid
- *       404:
- *         description: Student not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Student not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     summary: Update a student
  *     tags:
@@ -299,6 +537,7 @@ import { authorize } from "../middlewares/role.middleware";
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Student ID
  *         schema:
  *           type: string
  *     requestBody:
@@ -306,7 +545,24 @@ import { authorize } from "../middlewares/role.middleware";
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/StudentInput'
+ *             $ref: '#/components/schemas/StudentUpdateInput'
+ *           examples:
+ *               updateRequest:
+ *                 summary: Update student request
+ *                 value:
+ *                   address: Pokhara, Nepal
+ *                   contact: "9800000001"
+ *                   gender: male
+ *                   dob: 2005-06-15
+ *                   name: Anish Shrestha Updated
+ *                   is_active: true
+ *                   status: active
+ *                   academicYearId: 680cf4d5e6e79f54ea8e8d00
+ *                   classId: 680cf4d5e6e79f54ea8e8d01
+ *                   sectionId: 680cf4d5e6e79f54ea8e8d02
+ *                   rollNumber: 2
+ *                   parentId: 680cf4d5e6e79f54ea8e8d10
+ *                   studentEnrollmentStatus: enrolled
  *     responses:
  *       200:
  *         description: Student updated successfully
@@ -314,14 +570,47 @@ import { authorize } from "../middlewares/role.middleware";
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/StudentResponse'
+ *             examples:
+ *               updated:
+ *                 summary: Student updated
+ *                 value:
+ *                   success: true
+ *                   message: Student updated successfully
+ *                   data:
+ *                     _id: 680cf4d5e6e79f54ea8e8ca1
+ *                     admissionNumber: STU-2026-001
+ *                     address: Pokhara, Nepal
+ *                     gender: male
+ *                     contact: 9800000001
+ *                     dob: 2005-06-15
+ *                     student_email: student@example.com
+ *                     status: active
+ *                     createdAt: 2026-04-27T10:45:00.000Z
+ *                     updatedAt: 2026-04-28T12:00:00.000Z
  *       400:
  *         description: Validation failed
- *       404:
- *         description: Student not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Student not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *   delete:
  *     summary: Permanently delete a student
  *     tags:
@@ -332,6 +621,7 @@ import { authorize } from "../middlewares/role.middleware";
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Student ID
  *         schema:
  *           type: string
  *     responses:
@@ -340,13 +630,42 @@ import { authorize } from "../middlewares/role.middleware";
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/MessageResponse'
- *       404:
- *         description: Student not found
+ *               $ref: '#/components/schemas/StudentResponse'
+ *             examples:
+ *               deleted:
+ *                 summary: Student deleted
+ *                 value:
+ *                   success: true
+ *                   message: Student permanently deleted successfully
+ *                   data:
+ *                     _id: 680cf4d5e6e79f54ea8e8ca1
+ *                     admissionNumber: STU-2026-001
+ *                     address: Kathmandu, Nepal
+ *                     gender: male
+ *                     contact: 9800000000
+ *                     dob: 2005-06-15
+ *                     student_email: student@example.com
+ *                     status: active
+ *                     createdAt: 2026-04-27T10:45:00.000Z
+ *                     updatedAt: 2026-04-27T10:45:00.000Z
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Student not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 const studentRouter=Router();
 studentRouter.post('/',authenticate,authorize([Role.OADMIN]),createStudent);

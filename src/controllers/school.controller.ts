@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import * as schoolService from '../services/school.service';
 import * as userService from '../services/user.service';
-import { schoolCreate, schoolUpdate, zodError } from '../validators/school.validator';
+import { zodError } from '../utils/zod-error.util';
+import { schoolCreate, schoolUpdate } from '../validators/school.validator';
 import { IUserInput } from '../validators/user.validator';
 import { Types } from 'mongoose';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { generateUserEmail } from '../utils/email.util';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
@@ -65,18 +67,16 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
     }
     const parsedData = parsed.data;
 
-    // Check for duplicate email
-    const existingUser = await userService.getUserByEmail(parsedData.email,req.userId);
-    if (existingUser) {
-      return sendError(res, 'Email already exists', undefined, 409);
-    }
+    // Auto-generate email
+      const generatedEmail = await generateUserEmail(parsedData.name, parsedData.school_name);
 
-    const hashedPassword = await hashPassword(parsedData.password);
+    const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
+    const hashedPassword = await hashPassword(defaultPassword);
 
     // ── Create user first, then school. Roll back user if school fails. ──────
     const user = await userService.createUser({
       name: parsedData.name,
-      email: parsedData.email,
+      email: generatedEmail,
       password: hashedPassword,
       role: 'oadmin',
       ...(parsedData.profileImage && { profileImage: parsedData.profileImage }),
@@ -159,6 +159,7 @@ export const getSchoolById = async (req: Request, res: Response) => {
 
 // ─── Update School ───────────────────────────────────────────────────────────
 export const updateSchool = async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
   try {
     const { id } = req.params;
     if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
@@ -188,18 +189,10 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
     // Get current school to find owner_id
     const currentSchool = await schoolService.getSchoolById(id);
     if (!currentSchool) return sendError(res, 'School not found', undefined, 404);
-    const isOwner = currentSchool.owner_id.toString() === req.userId;
-    if (!isOwner && req.role !== 'superadmin') {
+    console.log('Current school owner_id:', currentSchool.owner_id._id.toString(), 'Requesting userId:', req.userId);
+    if (currentSchool.owner_id._id.toString() !== req.userId) {
       return sendError(res, 'Forbidden: You do not own this school', undefined, 403);
     }
-    // Check for duplicate email if email is changing
-    if (parsedData.email) {
-      const existingUser = await userService.getUserByEmail(parsedData.email, currentSchool.owner_id.toString());
-      if (existingUser) {
-        return sendError(res, 'Email already exists', undefined, 409);
-      }
-    }
-
     // Update linked user (only fields that were actually provided)
     const userUpdateData: Partial<IUserInput> = {};
     if (parsedData.name) userUpdateData.name = parsedData.name;
@@ -208,7 +201,7 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await userService.updateUser(currentSchool.owner_id.toString(), userUpdateData);
+      await userService.updateUser(currentSchool.owner_id._id.toString(), userUpdateData);
     }
 
     const school = await schoolService.updateSchool(id, parsedData);

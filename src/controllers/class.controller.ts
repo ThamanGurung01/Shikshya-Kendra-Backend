@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as ClassService from '../services/class.service';
-import { zodError, ClassSchema } from '../validators/class.validator';
+import { zodError } from '../utils/zod-error.util';
+import { ClassSchema } from '../validators/class.validator';
 import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';

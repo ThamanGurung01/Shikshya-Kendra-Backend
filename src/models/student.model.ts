@@ -1,20 +1,32 @@
 import {model,Schema,Types} from "mongoose";
 export interface IStudent{
+    admissionNumber:string;
+    studentName:string;
     address:string;
+    gender:string;
     contact:string;
+    dob:Date;
     student_email?:string;
-    school_id:Types.ObjectId;
-    user_id:Types.ObjectId;
+    schoolId:Types.ObjectId;
+    userId:Types.ObjectId;
+    status:"active" | "inactive" | "transfered" | "graduated" | "suspended" | "expelled" | "withdrawn";
+    parentId?: Types.ObjectId|null;
     createdAt:Date;
     updatedAt:Date;
     deletedAt?:Date|null;
 }
 const studentSchema=new Schema<IStudent>({
+    studentName:{type:String,required:true},
+    admissionNumber:{type:String,required:true,unique:true},
     address:{type:String,required:true},
+    gender:{type:String,required:true},
     contact:{type:String,required:true},
+    dob:{type:Date,required:true},
     student_email:{type:String},
-    school_id:{type:Types.ObjectId,ref:'School',required:true},
-    user_id:{type:Types.ObjectId,ref:'User',required:true},
+    schoolId:{type:Types.ObjectId,ref:'School',required:true},
+    userId:{type:Types.ObjectId,ref:'User',required:true},
+    status:{type:String,enum:["active","inactive","transfered","graduated","suspended","expelled","withdrawn"],default:"active"},
+    parentId:{type:Types.ObjectId,ref:'Parent', default:null},
     deletedAt:{type:Date,default:null}
 },{
     timestamps:{

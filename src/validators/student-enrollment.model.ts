@@ -1,12 +1,24 @@
-import {z,ZodError} from 'zod';
-export const StudentEnrollmentSchema=z.object({
-    name:z.string().min(1,"Name is required"),
-    startDate:z.string().min(1,"Start date is required"),
-    endDate:z.string().min(1,"End date is required"),
-    isCurrent:z.boolean().default(false),
+import { z } from "zod";
+
+export const StudentEnrollmentSchema = z.object({
+    studentId: z.string().optional().refine(v=>v!==undefined),
+    schoolId: z.string().min(1, "schoolId is required"),
+    academicYearId: z.string().min(1, "academicYearId is required"),
+    classId: z.string().min(1, "classId is required"),
+    sectionId: z.string().min(1, "sectionId is required"),
+    rollNumber: z.number().int().optional().refine(v=>v!==undefined),
+    promotedFromEnrollmentId: z.string().optional().refine(v=>v!==undefined),
+    studentEnrollmentStatus: z.enum([
+            "enrolled",
+            "pending",
+            "waitlisted",
+            "dropped",
+            "completed",
+            "failed",
+            "withdrawn",
+            "cancelled",
+        ]).default("pending"),
+
 });
-export const zodError=(parsedError:ZodError)=>{
-const tree=z.treeifyError(parsedError);
-return tree.errors;
-}
-export type IStudentEnrollmentInput=z.infer<typeof StudentEnrollmentSchema>;
+
+export type IStudentEnrollmentInput = z.infer<typeof StudentEnrollmentSchema>;

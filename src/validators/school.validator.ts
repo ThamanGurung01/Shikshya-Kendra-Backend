@@ -1,4 +1,4 @@
-import {z,ZodError} from 'zod';
+import {z} from 'zod';
 import { userSchema } from './user.validator';
 const SchoolSchema=z.object({
     school_name:z.string().min(3,"Name must be at least 3 characters long"),
@@ -24,13 +24,8 @@ export const schoolCreate=SchoolSchema.extend(userSchema.shape);
 // Update: school fields + all user fields optional
 export const schoolUpdate=SchoolSchema.partial().extend({
     name:z.string().min(3,"Name must be at least 3 characters long").optional(),
-    email:z.email("Invalid email address").optional(),
     password:z.string().min(6,"Password must be at least 6 characters long").optional(),
     profileImage:z.string().optional(),
 });
-export const zodError=(parsedError:ZodError)=>{
-    const tree=z.treeifyError(parsedError);
-    return tree.errors;
-}
 export type ISchoolInput=z.infer<typeof SchoolSchema>;
 export type ISchoolUpdate=z.infer<typeof schoolUpdate>;

@@ -2,27 +2,14 @@
  export interface IStudentEnrollment {
   studentId: Types.ObjectId;
   schoolId: Types.ObjectId;
-
   academicYearId: Types.ObjectId;
-
   classId: Types.ObjectId;
   sectionId: Types.ObjectId;
-
-  rollNumber: number;
-
+  rollNumber?: number;
   promotedFromEnrollmentId?: Types.ObjectId;
-
-  status:string;
-    // | "active"
-    // | "promoted"
-    // | "failed"
-    // | "transferred"
-    // | "graduated"
-    // | "dropped";
-
-  joinedAt: string;
-  leftAt?: string;
-deletedAt?:Date;
+  studentEnrollmentStatus:"enrolled" | "pending" | "waitlisted" | "dropped" | "completed" | "failed" | "withdrawn" | "cancelled";
+  joinedAt?: Date;
+  leftAt?: Date;
 };
 export const studentEnrollmentSchema=new Schema<IStudentEnrollment>({
     studentId:{type:Types.ObjectId,ref:'Student',required:true},
@@ -30,12 +17,12 @@ export const studentEnrollmentSchema=new Schema<IStudentEnrollment>({
     academicYearId:{type:Types.ObjectId,ref:'AcademicYear',required:true},
     classId:{type:Types.ObjectId,ref:'Class',required:true},
     sectionId:{type:Types.ObjectId,ref:'Section',required:true},
-    rollNumber:{type:Number,required:true},
+    rollNumber:{type:Number},
     promotedFromEnrollmentId:{type:Types.ObjectId,ref:'StudentEnrollment'},
-    status:{type:String,required:true},
-    joinedAt:{type:String,required:true},
-    leftAt:{type:String},
-    deletedAt:{type:Date,default:null}
+    studentEnrollmentStatus:{type:String,enum:["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"],default:"pending",required:true},
+    joinedAt:{type:Date},
+    leftAt:{type:Date}
 },{
     timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}
 })
+export const StudentEnrollment = model<IStudentEnrollment>('StudentEnrollment',studentEnrollmentSchema);

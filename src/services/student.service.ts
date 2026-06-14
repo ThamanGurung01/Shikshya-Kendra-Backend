@@ -3,8 +3,15 @@ import { Student } from "../models/student.model";
 import { IStudentInput } from "../validators/student.validator";
 
 //create
-export const createStudent=async(data:IStudentInput)=>{
-    return await Student.create(data);
+export const createStudent=async(data:IStudentInput,others:Record<string,unknown>={}, session?: any)=>{
+    const cleanOthers = Object.fromEntries(
+        Object.entries(others).filter(([_, v]) => v !== undefined)
+    );
+    const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+    );
+    const [student] = await Student.create([{...cleanData,...cleanOthers}], { session });
+    return student!;
 }
 
 //get all
@@ -13,12 +20,12 @@ export const getAllStudents=async()=>{
 }
 
 export const getAllStudentsBySchool=async(schoolId:string)=>{
-    return await Student.find({school_id:schoolId}).limit(20).sort({createdAt:-1});
+    return await Student.find({schoolId}).populate('parentId').limit(20).sort({createdAt:-1});
 }
 
 //getById
 export const getStudentById=async(id:string)=>{
-    return await Student.findById(id);
+    return await Student.findById(id).populate('parentId');
 }
 
 //update
@@ -27,7 +34,7 @@ export const updateStudent=async(id:string,data:IStudentInput)=>{
 }
 
 export const updateStudentBySchool=async(id:string,schoolId:string,data:IStudentInput)=>{
-    return await Student.findOneAndUpdate({_id:id,school_id:schoolId},data,{returnDocument:'after',runValidators: true});
+    return await Student.findOneAndUpdate({_id:id,schoolId},data,{returnDocument:'after',runValidators: true});
 }
 
 //hard delete
@@ -36,5 +43,5 @@ export const hardDeleteStudent=async(id:string)=>{
 }
 
 export const hardDeleteStudentBySchool=async(id:string,schoolId:string)=>{
-    return await Student.findOneAndDelete({_id:id,school_id:schoolId});
+    return await Student.findOneAndDelete({_id:id,schoolId});
 }

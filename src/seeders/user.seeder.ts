@@ -3,17 +3,17 @@ import { School } from "../models/school.model";
 import { hashPassword } from "../utils/hash.util";
 
 const DEFAULT_PASSWORD = "password123";
-const EXAMPLE_SCHOOL_EMAIL = "example.school@gmail.com";
-const EXAMPLE_OADMIN_EMAIL = "oadmin@example.com";
+const EXAMPLE_SCHOOL_EMAIL = "example.school@test.com";
+const EXAMPLE_OADMIN_EMAIL = "oadmin@test.com";
 
 export const userData = async () => {
     const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
     await User.findOneAndUpdate(
-      { email: "superadmin@gmail.com" },
+      { email: "superadmin@test.com" },
       {
         $set: {
           name: "Super Admin",
-          email: "superadmin@gmail.com",
+          email: "superadmin@test.com",
           password: hashedPassword,
           role: "superadmin",
           is_active: true,
