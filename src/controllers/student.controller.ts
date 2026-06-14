@@ -52,15 +52,15 @@ try{
         if(!parentId){
             if(!parsedParentData||!parsedParentData.data) return sendError(res,"Parent data is required when parentId is not provided",undefined,400);
             parent= await parentService.createParent(parsedParentData.data,{},session);
-        }
-        if(!parent) return sendError(res,"Parent creation failed",undefined,500);
-        const parentUser=await userService.createUser({
+            if(!parent) return sendError(res,"Parent creation failed",undefined,500);
+            await userService.createUser({
             name:parent.fatherName || parent.motherName || parent.guardianName || "Parent",
             email:parentGeneratedEmail,
             password:hashedPassword,
             role:"parent",
             is_active:true
         });
+        }
         const user=await userService.createUser({
             name:parsedStudentData.name,
             email:generatedEmail,
@@ -86,7 +86,7 @@ try{
             contact:parsedStudentData.contact,
             dob:parsedStudentData.dob,
             ...(parsedStudentData.student_email ? {student_email:parsedStudentData.student_email} : {}),
-            ...(parentId ? {parentId:parentId} : parent._id),
+            ...(parentId ? {parentId:parentId} : {parentId:parent?._id}),
             schoolId:schoolId.toString(),
             userId:user._id.toString(),
             status:parsedStudentData.status
@@ -194,6 +194,8 @@ if(!parsed.success) {
     if(parsedData.dob !== undefined) studentFields.dob = parsedData.dob;
     if(parsedData.student_email !== undefined) studentFields.student_email = parsedData.student_email;
     if(parsedData.status !== undefined) studentFields.status = parsedData.status;
+    if(parsedData.studentName !== undefined) studentFields.studentName = parsedData.studentName;
+    if(parsedData.parentId !== undefined) studentFields.parentId = parsedData.parentId;
     let student;
     if(Object.keys(studentFields).length > 0) {
         student=await studentService.updateStudentBySchool(id,req.schoolId,studentFields as any);
@@ -220,6 +222,25 @@ if(!parsed.success) {
         const enrollment=await enrollmentService.getStudentEnrollmentByStudentId(id);
         if(enrollment) {
             await enrollmentService.updateStudentEnrollment(enrollment._id.toString(),req.schoolId,enrollmentFields as any);
+        }
+    }
+    // Update parent fields if provided
+    const parentFieldKeys=['fatherName','fatherPhone','motherName','motherPhone','guardianName','guardianPhone','relation','primarygurdianemail'];
+    const parentUpdateData: Record<string, unknown> = {};
+    let hasParentData=false;
+    for (const key of parentFieldKeys) {
+        if ((req.body as any)[key] !== undefined) {
+            parentUpdateData[key] = (req.body as any)[key];
+            hasParentData=true;
+        }
+    }
+    if(hasParentData) {
+        if(!currentStudent.parentId) return sendError(res,'Student has no associated parent',undefined,400);
+        const updatedParent = await parentService.updateParent(currentStudent.parentId.toString(), parentUpdateData as any);
+        if(!updatedParent) return sendError(res,"Parent not found",undefined,404);
+        const parentName = parentUpdateData.fatherName || parentUpdateData.motherName || parentUpdateData.guardianName;
+        if(parentName) {
+            await userService.updateUser(updatedParent.userId.toString(), { name: parentName as string });
         }
     }
     sendSuccess(res, "Student updated successfully", student, 200);

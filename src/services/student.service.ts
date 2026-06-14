@@ -20,12 +20,12 @@ export const getAllStudents=async()=>{
 }
 
 export const getAllStudentsBySchool=async(schoolId:string)=>{
-    return await Student.find({schoolId}).limit(20).sort({createdAt:-1});
+    return await Student.find({schoolId}).populate('parentId').limit(20).sort({createdAt:-1});
 }
 
 //getById
 export const getStudentById=async(id:string)=>{
-    return await Student.findById(id);
+    return await Student.findById(id).populate('parentId');
 }
 
 //update

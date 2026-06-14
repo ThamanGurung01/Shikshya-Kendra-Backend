@@ -73,6 +73,11 @@ import { authorize } from "../middlewares/role.middleware";
  *           type: string
  *           nullable: true
  *           description: Previous enrollment ID if promoted
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Existing parent ID (if not provided, parent will be created from request body fields)
+ *           example: 680cf4d5e6e79f54ea8e8d10
  *         status:
  *           type: string
  *           enum:
@@ -130,6 +135,11 @@ import { authorize } from "../middlewares/role.middleware";
  *         userId:
  *           type: string
  *           example: 680cf4d5e6e79f54ea8e8ca0
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Parent ID (populated with parent data)
+ *           example: 680cf4d5e6e79f54ea8e8d10
  *         status:
  *           type: string
  *           enum:
@@ -287,6 +297,11 @@ import { authorize } from "../middlewares/role.middleware";
  *           type: string
  *           nullable: true
  *           description: Previous enrollment ID if promoted
+ *         parentId:
+ *           type: string
+ *           nullable: true
+ *           description: Parent ID to associate with student
+ *           example: 680cf4d5e6e79f54ea8e8d10
  *         studentEnrollmentStatus:
  *           type: string
  *           enum:
@@ -357,6 +372,7 @@ import { authorize } from "../middlewares/role.middleware";
  *                   classId: 680cf4d5e6e79f54ea8e8d01
  *                   sectionId: 680cf4d5e6e79f54ea8e8d02
  *                   rollNumber: 1
+ *                   parentId: 680cf4d5e6e79f54ea8e8d10
  *                   studentEnrollmentStatus: enrolled
  *     responses:
  *       201:
@@ -545,6 +561,7 @@ import { authorize } from "../middlewares/role.middleware";
  *                   classId: 680cf4d5e6e79f54ea8e8d01
  *                   sectionId: 680cf4d5e6e79f54ea8e8d02
  *                   rollNumber: 2
+ *                   parentId: 680cf4d5e6e79f54ea8e8d10
  *                   studentEnrollmentStatus: enrolled
  *     responses:
  *       200:

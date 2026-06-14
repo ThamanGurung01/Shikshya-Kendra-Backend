@@ -10,7 +10,7 @@ export interface IStudent{
     schoolId:Types.ObjectId;
     userId:Types.ObjectId;
     status:"active" | "inactive" | "transfered" | "graduated" | "suspended" | "expelled" | "withdrawn";
-    parentId?: Types.ObjectId;
+    parentId?: Types.ObjectId|null;
     createdAt:Date;
     updatedAt:Date;
     deletedAt?:Date|null;

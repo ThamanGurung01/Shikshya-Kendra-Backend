@@ -23,6 +23,7 @@ export const studentUpdate=z.object({
     dob:z.string().min(1,"Date of birth is required").optional(),
     student_email:z.email("Invalid email address").optional(),
     status:z.enum(["active" , "inactive" , "transfered" , "graduated" , "suspended" , "expelled" , "withdrawn"]).optional(),
+    parentId:z.string().optional(),
     name:z.string().min(3,"Name must be at least 3 characters long").optional(),
     password:z.string().min(6,"Password must be at least 6 characters long").optional(),
     profileImage:z.string().optional(),
