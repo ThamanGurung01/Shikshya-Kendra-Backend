@@ -8,7 +8,7 @@ import { Types } from 'mongoose';
 import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-import { generateSchoolEmail } from '../utils/email.util';
+import { generateUserEmail } from '../utils/email.util';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
@@ -68,7 +68,7 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
     const parsedData = parsed.data;
 
     // Auto-generate email
-      const generatedEmail = await generateSchoolEmail(parsedData.name, parsedData.school_name);
+      const generatedEmail = await generateUserEmail(parsedData.name, parsedData.school_name);
 
     const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
     const hashedPassword = await hashPassword(defaultPassword);

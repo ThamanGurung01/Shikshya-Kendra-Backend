@@ -3,6 +3,7 @@ import * as studentService from '../services/student.service';
 import * as userService from '../services/user.service';
 import * as enrollmentService from '../services/student-enrollment.service';
 import * as schoolService from '../services/school.service';
+import * as parentService from '../services/parent.service';
 import { zodError } from '../utils/zod-error.util';
 import {  studentFullSchema, studentUpdate } from '../validators/student.validator';
 import mongoose, { Types } from 'mongoose';
@@ -12,7 +13,9 @@ import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
 import { IUserInput } from '../validators/user.validator';
-import {generateStudentEmail } from '../utils/email.util';
+import { generateUserEmail, generateParentEmail } from '../utils/email.util';
+import { IParentInput, ParentSchema } from '../validators/parent.validator';
+import { Parent } from '../models/parent.model';
 //create student
 export const createStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -20,6 +23,15 @@ try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const schoolId=resolveSchoolId(req);
     if(!schoolId) return sendError(res,'School ID is required',undefined,400);
+    const parentId=req.body.parentId;
+    let parsedParentData;
+    if(!parentId){
+        parsedParentData=ParentSchema.safeParse(req.body);
+        if(!parsedParentData.success){
+            const tree=zodError(parsedParentData.error);
+            return sendError(res,"Validation failed",tree,400);
+        }
+    }
     //validation using zod
     const parsed=studentFullSchema.safeParse({...req.body,schoolId});
     if(!parsed.success) {
@@ -28,14 +40,27 @@ try{
     const parsedStudentData=parsed.data;
     const school=await schoolService.getSchoolById(schoolId);
     if(!school) return sendError(res,'Associated school not found',undefined,404);
-    // Auto-generate email
-    const generatedEmail = await generateStudentEmail(parsedStudentData.name,school.school_name);
-    
+    // Auto-generate emails
+    const generatedEmail = await generateUserEmail(parsedStudentData.name,school.school_name);
+    const parentGeneratedEmail = generateParentEmail(generatedEmail);
     const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
     const hashedPassword=await hashPassword(defaultPassword);
     const session=await mongoose.startSession();
     session.startTransaction();
     try{
+        let parent;
+        if(!parentId){
+            if(!parsedParentData||!parsedParentData.data) return sendError(res,"Parent data is required when parentId is not provided",undefined,400);
+            parent= await parentService.createParent(parsedParentData.data,{},session);
+        }
+        if(!parent) return sendError(res,"Parent creation failed",undefined,500);
+        const parentUser=await userService.createUser({
+            name:parent.fatherName || parent.motherName || parent.guardianName || "Parent",
+            email:parentGeneratedEmail,
+            password:hashedPassword,
+            role:"parent",
+            is_active:true
+        });
         const user=await userService.createUser({
             name:parsedStudentData.name,
             email:generatedEmail,
@@ -61,6 +86,7 @@ try{
             contact:parsedStudentData.contact,
             dob:parsedStudentData.dob,
             ...(parsedStudentData.student_email ? {student_email:parsedStudentData.student_email} : {}),
+            ...(parentId ? {parentId:parentId} : parent._id),
             schoolId:schoolId.toString(),
             userId:user._id.toString(),
             status:parsedStudentData.status

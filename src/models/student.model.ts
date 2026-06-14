@@ -10,6 +10,7 @@ export interface IStudent{
     schoolId:Types.ObjectId;
     userId:Types.ObjectId;
     status:"active" | "inactive" | "transfered" | "graduated" | "suspended" | "expelled" | "withdrawn";
+    parentId?: Types.ObjectId;
     createdAt:Date;
     updatedAt:Date;
     deletedAt?:Date|null;
@@ -25,6 +26,7 @@ const studentSchema=new Schema<IStudent>({
     schoolId:{type:Types.ObjectId,ref:'School',required:true},
     userId:{type:Types.ObjectId,ref:'User',required:true},
     status:{type:String,enum:["active","inactive","transfered","graduated","suspended","expelled","withdrawn"],default:"active"},
+    parentId:{type:Types.ObjectId,ref:'Parent', default:null},
     deletedAt:{type:Date,default:null}
 },{
     timestamps:{
