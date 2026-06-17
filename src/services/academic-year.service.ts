@@ -2,8 +2,14 @@ import { AcademicYear } from "../models/academic-year.model";
 import { IAcademicYearInput } from "../validators/academic-year.validator";
 
 // create
-export const createAcademicYear = async (data: IAcademicYearInput,others:Object={}) => {
-    return await AcademicYear.create({ ...data,...others });
+export const createAcademicYear = async (data: IAcademicYearInput, others: Record<string, unknown> = {}) => {
+    if (data.isCurrent && others.schoolId) {
+        await AcademicYear.updateMany(
+            { schoolId: others.schoolId, isCurrent: true },
+            { isCurrent: false }
+        );
+    }
+    return await AcademicYear.create({ ...data, ...others });
 }
 
 // get all — no user population needed for list view
@@ -21,6 +27,12 @@ export const getAcademicYearById = async (id: string) => {
 }
 
 export const updateAcademicYear = async (id: string, schoolId: string, data: IAcademicYearInput) => {
+    if (data.isCurrent) {
+        await AcademicYear.updateMany(
+            { schoolId, isCurrent: true, _id: { $ne: id } },
+            { isCurrent: false }
+        );
+    }
     return await AcademicYear.findOneAndUpdate({ _id: id, schoolId }, data, {
         returnDocument: 'after',
         runValidators: true,
