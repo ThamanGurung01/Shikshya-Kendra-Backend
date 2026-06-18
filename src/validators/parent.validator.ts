@@ -7,6 +7,7 @@ export const ParentSchema=z.object({
     motherPhone:z.string().optional(),
     guardianName:z.string().optional(),
     guardianPhone:z.string().optional(),
+    userId:z.string().optional(),
     relation:z.string().optional(),
     primarygurdianemail:z.string().email('Invalid email address').optional(),
 }).superRefine((data,ctx)=>{

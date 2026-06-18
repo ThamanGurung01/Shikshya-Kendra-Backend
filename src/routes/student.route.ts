@@ -3,11 +3,47 @@ import {authenticate} from '../middlewares/auth.middleware';
 import { createStudent, hardDeleteStudent,getAllStudents,getStudentById,updateStudent } from '../controllers/student.controller';
 import Role from "../utils/role.util";
 import { authorize } from "../middlewares/role.middleware";
+import { uploadMiddleware } from '../middlewares/upload.middleware';
 
 /**
  * @swagger
  * components:
  *   schemas:
+ *     StudentDocument:
+ *       type: object
+ *       properties:
+ *         photoUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/files/photo.jpg
+ *         birthCertificateUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/files/birth-certificate.pdf
+ *         transferCertificateUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/files/transfer-certificate.pdf
+ *         previousMarksheetUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/files/previous-marksheet.pdf
+ *         citizenshipOrIdUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: https://cdn.example.com/files/citizenship.pdf
+ *     HealthInfo:
+ *       type: object
+ *       properties:
+ *         bloodGroup:
+ *           type: string
+ *           nullable: true
+ *           example: O+
  *     StudentInput:
  *       type: object
  *       required:
@@ -53,6 +89,10 @@ import { authorize } from "../middlewares/role.middleware";
  *           format: uri
  *           nullable: true
  *           example: https://cdn.example.com/profile-images/anish.png
+ *         documents:
+ *           $ref: '#/components/schemas/StudentDocument'
+ *         healthInfo:
+ *           $ref: '#/components/schemas/HealthInfo'
  *         academicYearId:
  *           type: string
  *           description: Academic year ID for enrollment
@@ -151,6 +191,10 @@ import { authorize } from "../middlewares/role.middleware";
  *             - expelled
  *             - withdrawn
  *           example: active
+ *         documents:
+ *           $ref: '#/components/schemas/StudentDocument'
+ *         healthInfo:
+ *           $ref: '#/components/schemas/HealthInfo'
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -262,6 +306,10 @@ import { authorize } from "../middlewares/role.middleware";
  *           format: uri
  *           nullable: true
  *           example: https://cdn.example.com/profile-images/anish.png
+ *         documents:
+ *           $ref: '#/components/schemas/StudentDocument'
+ *         healthInfo:
+ *           $ref: '#/components/schemas/HealthInfo'
  *         status:
  *           type: string
  *           enum:
@@ -354,9 +402,49 @@ import { authorize } from "../middlewares/role.middleware";
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/StudentInput'
+ *             allOf:
+ *               - $ref: '#/components/schemas/StudentInput'
+ *               - type: object
+ *                 properties:
+ *                   photo:
+ *                     type: string
+ *                     format: binary
+ *                     description: Student photo file
+ *                   birthCertificate:
+ *                     type: string
+ *                     format: binary
+ *                     description: Birth certificate file
+ *                   transferCertificate:
+ *                     type: string
+ *                     format: binary
+ *                     description: Transfer certificate file
+ *                   previousMarksheet:
+ *                     type: string
+ *                     format: binary
+ *                     description: Previous marksheet file
+ *                   citizenshipOrId:
+ *                     type: string
+ *                     format: binary
+ *                     description: Citizenship or ID file
+ *                   profileImage:
+ *                     type: string
+ *                     format: binary
+ *                     description: Profile image file
+ *           encoding:
+ *             photo:
+ *               contentType: image/jpeg, image/png, image/webp, application/pdf
+ *             birthCertificate:
+ *               contentType: image/jpeg, image/png, image/webp, application/pdf
+ *             transferCertificate:
+ *               contentType: image/jpeg, image/png, image/webp, application/pdf
+ *             previousMarksheet:
+ *               contentType: image/jpeg, image/png, image/webp, application/pdf
+ *             citizenshipOrId:
+ *               contentType: image/jpeg, image/png, image/webp, application/pdf
+ *             profileImage:
+ *               contentType: image/jpeg, image/png, image/webp
  *           examples:
  *               createRequest:
  *                 summary: Create student request
@@ -668,9 +756,9 @@ import { authorize } from "../middlewares/role.middleware";
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 const studentRouter=Router();
-studentRouter.post('/',authenticate,authorize([Role.OADMIN]),createStudent);
+studentRouter.post('/',authenticate,authorize([Role.OADMIN]),uploadMiddleware,createStudent);
 studentRouter.get('/',authenticate,authorize([Role.OADMIN]),getAllStudents);
 studentRouter.get('/:id',authenticate,getStudentById);
-studentRouter.put('/:id',authenticate,authorize([Role.OADMIN]),updateStudent);
+studentRouter.put('/:id',authenticate,authorize([Role.OADMIN]),uploadMiddleware,updateStudent);
 studentRouter.delete('/:id',authenticate,authorize([Role.OADMIN]),hardDeleteStudent);
 export default studentRouter
