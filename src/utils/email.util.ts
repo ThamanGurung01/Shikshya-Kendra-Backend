@@ -26,6 +26,13 @@ export const generateUserEmail = async (personName: string, schoolName: string):
     }
 };
 
-export const generateParentEmail = (studentEmail: string): string => {
-    return studentEmail.replace('@', '.parent@');
+export const generateParentEmail = async (studentEmail: string): Promise<string> => {
+    let email = studentEmail.replace('@', '.parent@');
+    let count = 0;
+    while (true) {
+        const existing = await User.findOne({ email }).lean();
+        if (!existing) return email;
+        count++;
+        email = studentEmail.replace('@', `.parent${count}@`);
+    }
 };

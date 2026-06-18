@@ -16,6 +16,50 @@ import { IUserInput } from '../validators/user.validator';
 import { generateUserEmail, generateParentEmail } from '../utils/email.util';
 import { IParentInput, ParentSchema } from '../validators/parent.validator';
 import { Parent } from '../models/parent.model';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+interface UploadedFiles {
+  profileImage?: Express.Multer.File[];
+  photo?: Express.Multer.File[];
+  birthCertificate?: Express.Multer.File[];
+  transferCertificate?: Express.Multer.File[];
+  previousMarksheet?: Express.Multer.File[];
+  citizenshipOrId?: Express.Multer.File[];
+}
+
+function extractFileUrls(req: Request) {
+  const files = (req.files ?? {}) as UploadedFiles;
+  return {
+    profileImageUrl: (files.profileImage?.[0] as any)?.path as string | undefined,
+    photoUrl: (files.photo?.[0] as any)?.path as string | undefined,
+    birthCertificateUrl: (files.birthCertificate?.[0] as any)?.path as string | undefined,
+    transferCertificateUrl: (files.transferCertificate?.[0] as any)?.path as string | undefined,
+    previousMarksheetUrl: (files.previousMarksheet?.[0] as any)?.path as string | undefined,
+    citizenshipOrIdUrl: (files.citizenshipOrId?.[0] as any)?.path as string | undefined,
+  };
+}
+
+function buildDocuments(
+  body: any,
+  photoUrl?: string,
+  birthCertificateUrl?: string,
+  transferCertificateUrl?: string,
+  previousMarksheetUrl?: string,
+  citizenshipOrIdUrl?: string,
+) {
+  const hasAnyFile = photoUrl || birthCertificateUrl || transferCertificateUrl || previousMarksheetUrl || citizenshipOrIdUrl;
+  const hasAnyBody = body.photoUrl || body.birthCertificateUrl || body.transferCertificateUrl || body.previousMarksheetUrl || body.citizenshipOrIdUrl;
+  if (!hasAnyFile && !hasAnyBody) return undefined;
+
+  return {
+    ...(photoUrl ? { photoUrl } : body.photoUrl ? { photoUrl: body.photoUrl } : {}),
+    ...(birthCertificateUrl ? { birthCertificateUrl } : body.birthCertificateUrl ? { birthCertificateUrl: body.birthCertificateUrl } : {}),
+    ...(transferCertificateUrl ? { transferCertificateUrl } : body.transferCertificateUrl ? { transferCertificateUrl: body.transferCertificateUrl } : {}),
+    ...(previousMarksheetUrl ? { previousMarksheetUrl } : body.previousMarksheetUrl ? { previousMarksheetUrl: body.previousMarksheetUrl } : {}),
+    ...(citizenshipOrIdUrl ? { citizenshipOrIdUrl } : body.citizenshipOrIdUrl ? { citizenshipOrIdUrl: body.citizenshipOrIdUrl } : {}),
+  };
+}
+
 //create student
 export const createStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -23,17 +67,32 @@ try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const schoolId=resolveSchoolId(req);
     if(!schoolId) return sendError(res,'School ID is required',undefined,400);
-    const parentId=req.body.parentId;
+
+    const {
+      profileImageUrl, photoUrl, birthCertificateUrl,
+      transferCertificateUrl, previousMarksheetUrl, citizenshipOrIdUrl,
+    } = extractFileUrls(req);
+
+    const bodyForValidation = {
+      ...req.body,
+      ...(profileImageUrl && { profileImage: profileImageUrl }),
+      ...(photoUrl || birthCertificateUrl || transferCertificateUrl || previousMarksheetUrl || citizenshipOrIdUrl
+        ? { documents: buildDocuments(req.body, photoUrl, birthCertificateUrl, transferCertificateUrl, previousMarksheetUrl, citizenshipOrIdUrl) }
+        : {}),
+      schoolId,
+    };
+
+    const parentId=bodyForValidation.parentId;
     let parsedParentData;
     if(!parentId){
-        parsedParentData=ParentSchema.safeParse(req.body);
+        parsedParentData=ParentSchema.safeParse(bodyForValidation);
         if(!parsedParentData.success){
             const tree=zodError(parsedParentData.error);
             return sendError(res,"Validation failed",tree,400);
         }
     }
     //validation using zod
-    const parsed=studentFullSchema.safeParse({...req.body,schoolId});
+    const parsed=studentFullSchema.safeParse(bodyForValidation);
     if(!parsed.success) {
   const tree=zodError(parsed.error);
     return sendError(res,"Validation failed",tree,400);}
@@ -42,7 +101,7 @@ try{
     if(!school) return sendError(res,'Associated school not found',undefined,404);
     // Auto-generate emails
     const generatedEmail = await generateUserEmail(parsedStudentData.name,school.school_name);
-    const parentGeneratedEmail = generateParentEmail(generatedEmail);
+    const parentGeneratedEmail = await generateParentEmail(generatedEmail);
     const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
     const hashedPassword=await hashPassword(defaultPassword);
     const session=await mongoose.startSession();
@@ -51,15 +110,16 @@ try{
         let parent;
         if(!parentId){
             if(!parsedParentData||!parsedParentData.data) return sendError(res,"Parent data is required when parentId is not provided",undefined,400);
-            parent= await parentService.createParent(parsedParentData.data,{},session);
-            if(!parent) return sendError(res,"Parent creation failed",undefined,500);
-            await userService.createUser({
-            name:parent.fatherName || parent.motherName || parent.guardianName || "Parent",
+            const parentsData=parsedParentData.data;
+            const parentUser=await userService.createUser({
+            name:parentsData.fatherName || parentsData.motherName || parentsData.guardianName || "Parent",
             email:parentGeneratedEmail,
             password:hashedPassword,
             role:"parent",
             is_active:true
         });
+            parent= await parentService.createParent({...parentsData,userId:parentUser._id.toString()},{},session);
+            if(!parent) return sendError(res,"Parent creation failed",undefined,500);
         }
         const user=await userService.createUser({
             name:parsedStudentData.name,
@@ -89,7 +149,9 @@ try{
             ...(parentId ? {parentId:parentId} : {parentId:parent?._id}),
             schoolId:schoolId.toString(),
             userId:user._id.toString(),
-            status:parsedStudentData.status
+            status:parsedStudentData.status,
+            ...(parsedStudentData.documents && {documents: parsedStudentData.documents}),
+            ...(parsedStudentData.healthInfo && {healthInfo: parsedStudentData.healthInfo}),
         },{},session);
         const enrollmentStatus=parsedStudentData.studentEnrollmentStatus||"pending";
         const enrollmentData: enrollmentService.CreateEnrollmentData = {
@@ -170,7 +232,18 @@ try{
         if(!currentStudent) return sendError(res,'Student not found',undefined,404);
         if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
-        const parsed=studentUpdate.safeParse(req.body);
+        const {
+          profileImageUrl, photoUrl, birthCertificateUrl,
+          transferCertificateUrl, previousMarksheetUrl, citizenshipOrIdUrl,
+        } = extractFileUrls(req);
+        const bodyForValidation = {
+          ...req.body,
+          ...(profileImageUrl && { profileImage: profileImageUrl }),
+          ...(photoUrl || birthCertificateUrl || transferCertificateUrl || previousMarksheetUrl || citizenshipOrIdUrl
+            ? { documents: buildDocuments(req.body, photoUrl, birthCertificateUrl, transferCertificateUrl, previousMarksheetUrl, citizenshipOrIdUrl) }
+            : {}),
+        };
+        const parsed=studentUpdate.safeParse(bodyForValidation);
 if(!parsed.success) {
   const tree=zodError(parsed.error);
   return sendError(res,"Validation failed",tree,400);}
@@ -196,6 +269,8 @@ if(!parsed.success) {
     if(parsedData.status !== undefined) studentFields.status = parsedData.status;
     if(parsedData.studentName !== undefined) studentFields.studentName = parsedData.studentName;
     if(parsedData.parentId !== undefined) studentFields.parentId = parsedData.parentId;
+    if(parsedData.documents !== undefined) studentFields.documents = parsedData.documents;
+    if(parsedData.healthInfo !== undefined) studentFields.healthInfo = parsedData.healthInfo;
     let student;
     if(Object.keys(studentFields).length > 0) {
         student=await studentService.updateStudentBySchool(id,req.schoolId,studentFields as any);

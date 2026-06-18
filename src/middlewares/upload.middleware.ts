@@ -2,10 +2,14 @@ import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../configs/cloudinary';
 
+const studentDocFields = ['photo', 'birthCertificate', 'transferCertificate', 'previousMarksheet', 'citizenshipOrId'];
+
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (_req: any, file: any) => ({
-    folder: file.fieldname === 'profileImage' ? 'profile-images' : 'school-documents',
+    folder: file.fieldname === 'profileImage' ? 'profile-images'
+      : studentDocFields.includes(file.fieldname) ? 'student-documents'
+      : 'school-documents',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
     resource_type: 'auto',
     public_id: `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`,
@@ -33,4 +37,9 @@ export const uploadMiddleware = multer({
   { name: 'panCertificate', maxCount: 1 },
   { name: 'registrationCertificate', maxCount: 1 },
   { name: 'profileImage', maxCount: 1 },
+  { name: 'photo', maxCount: 1 },
+  { name: 'birthCertificate', maxCount: 1 },
+  { name: 'transferCertificate', maxCount: 1 },
+  { name: 'previousMarksheet', maxCount: 1 },
+  { name: 'citizenshipOrId', maxCount: 1 },
 ]);
