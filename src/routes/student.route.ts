@@ -57,9 +57,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         - sectionId
  *         - rollNumber
  *       properties:
- *         admissionNumber:
- *           type: string
- *           example: SK-AS-A3F2
  *         address:
  *           type: string
  *           example: Kathmandu, Nepal
@@ -109,28 +106,34 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *           type: number
  *           description: Roll number for enrollment
  *           example: 1
- *         promotedFromEnrollmentId:
+ *         fatherName:
  *           type: string
- *           nullable: true
- *           description: Previous enrollment ID if promoted
- *         parentId:
+ *           example: Ram Shrestha
+ *         motherName:
  *           type: string
- *           nullable: true
- *           description: Existing parent ID (if not provided, parent will be created from request body fields)
- *           example: 680cf4d5e6e79f54ea8e8d10
+ *           example: Sita Shrestha
+ *         primarygurdianemail:
+ *           type: string
+ *           format: email
+ *           example: parent@example.com
+ *         fatherPhone:
+ *           type: string
+ *           example: 9800000001
+ *         motherPhone:
+ *           type: string
+ *           example: 9800000002
  *         status:
  *           type: string
  *           enum:
- *             - enrolled
- *             - pending
- *             - waitlisted
- *             - dropped
- *             - completed
- *             - failed
+ *             - active
+ *             - inactive
+ *             - transfered
+ *             - graduated
+ *             - suspended
+ *             - expelled
  *             - withdrawn
- *             - cancelled
- *           default: pending
- *           description: Enrollment status
+ *           default: active
+ *           description: Student status
  *         is_active:
  *           type: boolean
  *           description: User active status
@@ -139,10 +142,6 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *           type: string
  *           description: User role
  *           example: student
- *         userId:
- *           type: string
- *           description: User ID (set server-side)
- *           example: 680cf4d5e6e79f54ea8e8ca0
  *     Student:
  *       type: object
  *       properties:
@@ -402,66 +401,9 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
- *             allOf:
- *               - $ref: '#/components/schemas/StudentInput'
- *               - type: object
- *                 properties:
- *                   photo:
- *                     type: string
- *                     format: binary
- *                     description: Student photo file
- *                   birthCertificate:
- *                     type: string
- *                     format: binary
- *                     description: Birth certificate file
- *                   transferCertificate:
- *                     type: string
- *                     format: binary
- *                     description: Transfer certificate file
- *                   previousMarksheet:
- *                     type: string
- *                     format: binary
- *                     description: Previous marksheet file
- *                   citizenshipOrId:
- *                     type: string
- *                     format: binary
- *                     description: Citizenship or ID file
- *                   profileImage:
- *                     type: string
- *                     format: binary
- *                     description: Profile image file
- *           encoding:
- *             photo:
- *               contentType: image/jpeg, image/png, image/webp, application/pdf
- *             birthCertificate:
- *               contentType: image/jpeg, image/png, image/webp, application/pdf
- *             transferCertificate:
- *               contentType: image/jpeg, image/png, image/webp, application/pdf
- *             previousMarksheet:
- *               contentType: image/jpeg, image/png, image/webp, application/pdf
- *             citizenshipOrId:
- *               contentType: image/jpeg, image/png, image/webp, application/pdf
- *             profileImage:
- *               contentType: image/jpeg, image/png, image/webp
- *           examples:
- *               createRequest:
- *                 summary: Create student request
- *                 value:
- *                   address: Kathmandu, Nepal
- *                   gender: male
- *                   contact: "9800000000"
- *                   dob: 2005-06-15
- *                   status: active
- *                   student_email: student@example.com
- *                   name: Anish Shrestha
- *                   academicYearId: 680cf4d5e6e79f54ea8e8d00
- *                   classId: 680cf4d5e6e79f54ea8e8d01
- *                   sectionId: 680cf4d5e6e79f54ea8e8d02
- *                   rollNumber: 1
- *                   parentId: 680cf4d5e6e79f54ea8e8d10
- *                   studentEnrollmentStatus: enrolled
+ *             $ref: '#/components/schemas/StudentInput'
  *     responses:
  *       201:
  *         description: Student created successfully
@@ -718,24 +660,7 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/StudentResponse'
- *             examples:
- *               deleted:
- *                 summary: Student deleted
- *                 value:
- *                   success: true
- *                   message: Student permanently deleted successfully
- *                   data:
- *                     _id: 680cf4d5e6e79f54ea8e8ca1
- *                     admissionNumber: STU-2026-001
- *                     address: Kathmandu, Nepal
- *                     gender: male
- *                     contact: 9800000000
- *                     dob: 2005-06-15
- *                     student_email: student@example.com
- *                     status: active
- *                     createdAt: 2026-04-27T10:45:00.000Z
- *                     updatedAt: 2026-04-27T10:45:00.000Z
+ *               $ref: '#/components/schemas/MessageResponse'
  *       401:
  *         description: Unauthorized
  *         content:
