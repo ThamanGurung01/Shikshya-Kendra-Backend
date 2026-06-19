@@ -189,9 +189,13 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
     // Get current school to find owner_id
     const currentSchool = await schoolService.getSchoolById(id);
     if (!currentSchool) return sendError(res, 'School not found', undefined, 404);
-    console.log('Current school owner_id:', currentSchool.owner_id._id.toString(), 'Requesting userId:', req.userId);
-    if (currentSchool.owner_id._id.toString() !== req.userId) {
-      return sendError(res, 'Forbidden: You do not own this school', undefined, 403);
+
+    // Superadmin can update any school without owner check
+    if (req.role !== 'superadmin') {
+      console.log('Current school owner_id:', currentSchool.owner_id._id.toString(), 'Requesting userId:', req.userId);
+      if (currentSchool.owner_id._id.toString() !== req.userId) {
+        return sendError(res, 'Forbidden: You do not own this school', undefined, 403);
+      }
     }
     // Update linked user (only fields that were actually provided)
     const userUpdateData: Partial<IUserInput> = {};
