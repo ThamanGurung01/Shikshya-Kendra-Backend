@@ -13,7 +13,7 @@ import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
 import { IUserInput } from '../validators/user.validator';
-import { generateUserEmail, generateParentEmail } from '../utils/email.util';
+import { generateUserEmail } from '../utils/email.util';
 import { IParentInput, ParentSchema } from '../validators/parent.validator';
 import { Parent } from '../models/parent.model';
 
@@ -101,7 +101,6 @@ try{
     if(!school) return sendError(res,'Associated school not found',undefined,404);
     // Auto-generate emails
     const generatedEmail = await generateUserEmail(parsedStudentData.name,school.school_name);
-    const parentGeneratedEmail = await generateParentEmail(generatedEmail);
     const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
     const hashedPassword=await hashPassword(defaultPassword);
     const session=await mongoose.startSession();
@@ -111,14 +110,19 @@ try{
         if(!parentId){
             if(!parsedParentData||!parsedParentData.data) return sendError(res,"Parent data is required when parentId is not provided",undefined,400);
             const parentsData=parsedParentData.data;
+            const parentName=parentsData.fatherName || parentsData.motherName || parentsData.guardianName || "Parent";
+            const parentUserEmail=await generateUserEmail(parentName,school.school_name);
             const parentUser=await userService.createUser({
-            name:parentsData.fatherName || parentsData.motherName || parentsData.guardianName || "Parent",
-            email:parentGeneratedEmail,
+            name:parentName,
+            email:parentUserEmail,
             password:hashedPassword,
             role:"parent",
             is_active:true
         });
-            parent= await parentService.createParent({...parentsData,userId:parentUser._id.toString()},{},session);
+            parent= await parentService.createParent({
+                ...parentsData,
+                userId:parentUser._id.toString(),
+            },{},session);
             if(!parent) return sendError(res,"Parent creation failed",undefined,500);
         }
         const user=await userService.createUser({
@@ -129,8 +133,7 @@ try{
             ...(parsedStudentData.profileImage && {profileImage:parsedStudentData.profileImage}),
             is_active:true
         },session);
-        const school=await schoolService.getSchoolById(schoolId);
-        const schoolAcronym=school?.school_name
+        const schoolAcronym=school.school_name
             ?.split(/\s+/)
             .map((w:string)=>w[0]?.toUpperCase())
             .join("")||"XX";
