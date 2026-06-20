@@ -11,6 +11,7 @@ import academicYearRouter from './routes/academic-year.route';
 import classRouter from './routes/class.route';
 import sectionRouter from './routes/section.route';
 import subjectRouter from './routes/subject.route';
+import teacherRouter from './routes/teacher.route';
 
 const app = express();
 app.use(cors({
@@ -30,6 +31,7 @@ app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs, {
         Class: 4,
         Section: 5,
         Subject: 6,
+        Teacher: 7,
       };
 
       return (tagOrder[leftTag] ?? Number.MAX_SAFE_INTEGER) - (tagOrder[rightTag] ?? Number.MAX_SAFE_INTEGER);
@@ -44,6 +46,7 @@ app.use('/api/v1/academic-year',academicYearRouter);
 app.use('/api/v1/class', classRouter);
 app.use('/api/v1/section', sectionRouter);
 app.use('/api/v1/subject', subjectRouter);
+app.use('/api/v1/teacher', teacherRouter);
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
 });
