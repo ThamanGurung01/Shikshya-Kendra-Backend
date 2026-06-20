@@ -29,7 +29,7 @@ export const createParent = async (req: AuthenticatedRequest, res: Response) => 
         if (!school) return sendError(res, 'Associated school not found', undefined, 404);
 
         const parentName = parsedData.fatherName || parsedData.motherName || parsedData.guardianName || "Parent";
-        const generatedEmail = parsedData.primarygurdianemail || await generateUserEmail(parentName, school.school_name);
+        const generatedEmail = await generateUserEmail(parentName, school.school_name);
         const defaultPassword = process.env.DEFAULT_PASSWORD || 'password123';
         const hashedPassword = await hashPassword(defaultPassword);
 
@@ -46,7 +46,6 @@ export const createParent = async (req: AuthenticatedRequest, res: Response) => 
 
             const parent = await parentService.createParent({
                 ...parsedData,
-                primarygurdianemail: generatedEmail,
             }, { userId: user._id.toString() }, session);
 
             await session.commitTransaction();

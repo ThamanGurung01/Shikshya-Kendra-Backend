@@ -16,6 +16,8 @@ const swaggerOptions={
             { name: 'Section' },
             { name: 'Subject' },
             { name: 'Teacher' },
+            { name: 'Librarian' },
+            { name: 'Accountant' },
         ],
         components: {
             securitySchemes: {
