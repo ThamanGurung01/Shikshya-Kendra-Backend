@@ -12,6 +12,7 @@ import { generateUserEmail } from '../utils/email.util';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
+  logo?: Express.Multer.File[];
   panCertificate?: Express.Multer.File[];
   registrationCertificate?: Express.Multer.File[];
   profileImage?: Express.Multer.File[];
@@ -21,6 +22,7 @@ interface UploadedFiles {
 function extractFileUrls(req: Request) {
   const files = (req.files ?? {}) as UploadedFiles;
   return {
+    logoUrl: (files.logo?.[0] as any)?.path as string | undefined,
     panUrl: (files.panCertificate?.[0] as any)?.path as string | undefined,
     regUrl: (files.registrationCertificate?.[0] as any)?.path as string | undefined,
     profileImageUrl: (files.profileImage?.[0] as any)?.path as string | undefined,
@@ -47,11 +49,12 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
   let createdUserId: Types.ObjectId | null = null;
   try {
-    const { panUrl, regUrl, profileImageUrl } = extractFileUrls(req);
+    const { logoUrl, panUrl, regUrl, profileImageUrl } = extractFileUrls(req);
 
     // Merge body with file-resolved fields so the validator sees a unified object
     const bodyForValidation = {
       ...req.body,
+      ...(logoUrl && { logo: logoUrl }),
       ...(profileImageUrl && { profileImage: profileImageUrl }),
       ...(panUrl || regUrl
         ? {
@@ -107,6 +110,7 @@ export const createSchool = async (req: AuthenticatedRequest, res: Response) => 
         contact: school.contact,
         school_email: school.school_email,
         website: school.website,
+        logo: school.logo,
         map: school.map,
         city: school.city,
         country: school.country,
@@ -167,10 +171,11 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
       return sendError(res, 'Invalid ID format', undefined, 400);
     }
 
-    const { panUrl, regUrl, profileImageUrl } = extractFileUrls(req);
+    const { logoUrl, panUrl, regUrl, profileImageUrl } = extractFileUrls(req);
 
     const bodyForValidation = {
       ...req.body,
+      ...(logoUrl && { logo: logoUrl }),
       ...(profileImageUrl && { profileImage: profileImageUrl }),
       ...(panUrl || regUrl
         ? { documents: buildDocuments(req.body, panUrl, regUrl) }

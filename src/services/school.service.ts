@@ -4,9 +4,12 @@ import { ISchoolInput, ISchoolUpdate } from "../validators/school.validator";
 import { generateUniqueSlug } from "../utils/slug.util";
 
 // create
-export const createSchool = async (data: ISchoolInput,others:Object={}) => {
+export const createSchool = async (data: ISchoolInput, others: Record<string, unknown> = {}) => {
     const slug = await generateUniqueSlug(School, data.school_name || '');
-    return await School.create({ ...data, slug,...others });
+    const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+    );
+    return await School.create({ ...cleanData, slug, ...others });
 }
 
 // get all — no user population needed for list view
@@ -14,14 +17,14 @@ export const getAllSchools = async () => {
     return await School.find()
         .limit(20)
         .sort({ createdAt: -1 })
-        .populate('owner_id', 'name email profileImage role is_active')
+        .populate('owner_id', 'name email profileImage role is_active -_id')
         .lean();
 }
 
 // get by id — populate owner so frontend gets name + profileImage
 export const getSchoolById = async (id: string) => {
     return await School.findById(id)
-        .populate('owner_id', 'name email profileImage role is_active')
+        .populate('owner_id', 'name email profileImage role is_active -_id')
         .lean();
 }
 
@@ -34,7 +37,7 @@ export const updateSchool = async (id: string, data: ISchoolUpdate) => {
     return await School.findByIdAndUpdate(id, updateData, {
         returnDocument: 'after',
         runValidators: true,
-    }).populate('owner_id', 'name email profileImage role is_active').lean();
+    }).populate('owner_id', 'name email profileImage role is_active -_id').lean();
 }
 
 // hard delete

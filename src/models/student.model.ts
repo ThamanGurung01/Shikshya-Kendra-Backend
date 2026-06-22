@@ -4,7 +4,7 @@ export interface IStudent{
     studentName:string;
     address:string;
     gender:string;
-    contact:string;
+    contact?:string;
     dob:Date;
     student_email?:string;
     schoolId:Types.ObjectId;
@@ -30,7 +30,7 @@ const studentSchema=new Schema<IStudent>({
     admissionNumber:{type:String,required:true,unique:true},
     address:{type:String,required:true},
     gender:{type:String,required:true},
-    contact:{type:String,required:true},
+    contact:{type:String},
     dob:{type:Date,required:true},
     student_email:{type:String},
     schoolId:{type:Types.ObjectId,ref:'School',required:true},

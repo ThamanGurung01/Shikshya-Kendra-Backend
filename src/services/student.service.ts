@@ -2,6 +2,9 @@ import { Types } from "mongoose";
 import { Student } from "../models/student.model";
 import { IStudentInput } from "../validators/student.validator";
 
+const userSelect = 'name email profileImage role is_active -_id';
+const schoolSelect = 'school_name logo address contact city -_id';
+
 //create
 export const createStudent=async(data:IStudentInput,others:Record<string,unknown>={}, session?: any)=>{
     const cleanOthers = Object.fromEntries(
@@ -16,16 +19,36 @@ export const createStudent=async(data:IStudentInput,others:Record<string,unknown
 
 //get all
 export const getAllStudents=async()=>{
-    return await Student.find().limit(20).sort({createdAt:-1});
+    return await Student.find()
+        .populate({
+            path:'parentId',
+            populate:{path:'userId',select:userSelect}
+        })
+        .populate('schoolId',schoolSelect)
+        .populate('userId',userSelect)
+        .limit(20).sort({createdAt:-1});
 }
 
 export const getAllStudentsBySchool=async(schoolId:string)=>{
-    return await Student.find({schoolId}).populate('parentId').limit(20).sort({createdAt:-1});
+    return await Student.find({schoolId})
+        .populate({
+            path:'parentId',
+            populate:{path:'userId',select:userSelect}
+        })
+        .populate('schoolId',schoolSelect)
+        .populate('userId',userSelect)
+        .limit(20).sort({createdAt:-1});
 }
 
 //getById
 export const getStudentById=async(id:string)=>{
-    return await Student.findById(id).populate('parentId');
+    return await Student.findById(id)
+        .populate({
+            path:'parentId',
+            populate:{path:'userId',select:userSelect}
+        })
+        .populate('schoolId',schoolSelect)
+        .populate('userId',userSelect);
 }
 
 //update
