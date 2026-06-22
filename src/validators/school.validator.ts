@@ -9,6 +9,7 @@ const SchoolSchema=z.object({
     map:z.string().optional().refine(v=>v!==undefined),
     city:z.string().optional().refine(v=>v!==undefined),
     country:z.string().optional().refine(v=>v!==undefined),
+    logo:z.string().optional(),
     documents:z.object({
         panCertificate:z.object({
             type:z.string().min(1,"PAN certificate type is required"),

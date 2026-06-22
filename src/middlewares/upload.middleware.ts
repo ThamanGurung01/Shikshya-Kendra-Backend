@@ -9,6 +9,7 @@ const storage = new CloudinaryStorage({
   params: async (_req: any, file: any) => ({
     folder: file.fieldname === 'profileImage' ? 'profile-images'
       : studentDocFields.includes(file.fieldname) ? 'student-documents'
+      : file.fieldname === 'logo' ? 'school-logos'
       : 'school-documents',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
     resource_type: 'auto',
@@ -34,6 +35,7 @@ export const uploadMiddleware = multer({
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB per file
 }).fields([
+  { name: 'logo', maxCount: 1 },
   { name: 'panCertificate', maxCount: 1 },
   { name: 'registrationCertificate', maxCount: 1 },
   { name: 'profileImage', maxCount: 1 },

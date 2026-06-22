@@ -6,7 +6,7 @@ const studentSchema=z.object({
     admissionNumber:z.string().optional(),
     address:z.string().min(5,"Address must be at least 5 characters long"),
     gender:z.string().min(1,"Gender is required"),
-    contact:z.string().min(10,"Contact number must be at least 10 characters long"),
+    contact:z.string().min(10,"Contact number must be at least 10 characters long").optional(),
     dob:z.string().min(1,"Date of birth is required"),
     student_email:z.email("Invalid email address").optional().refine(v=>v!==undefined),
     schoolId:z.string(),
