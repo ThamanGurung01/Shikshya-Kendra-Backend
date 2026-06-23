@@ -13,11 +13,14 @@ export const createLibrarian = async (
 };
 
 export const getAllLibrariansBySchool = async (schoolId: string) => {
-  return await Librarian.find({ schoolId }).limit(20).sort({ createdAt: -1 });
+  return await Librarian.find({ schoolId })
+    .populate('userId', 'name email profileImage role is_active -_id')
+    .limit(20).sort({ createdAt: -1 });
 };
 
 export const getLibrarianById = async (id: string) => {
-  return await Librarian.findById(id);
+  return await Librarian.findById(id)
+    .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const updateLibrarianBySchool = async (id: string, schoolId: string, data: Partial<ILibrarianInput>) => {

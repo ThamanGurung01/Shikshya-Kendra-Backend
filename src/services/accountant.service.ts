@@ -13,11 +13,14 @@ export const createAccountant = async (
 };
 
 export const getAllAccountantsBySchool = async (schoolId: string) => {
-  return await Accountant.find({ schoolId }).limit(20).sort({ createdAt: -1 });
+  return await Accountant.find({ schoolId })
+    .populate('userId', 'name email profileImage role is_active -_id')
+    .limit(20).sort({ createdAt: -1 });
 };
 
 export const getAccountantById = async (id: string) => {
-  return await Accountant.findById(id);
+  return await Accountant.findById(id)
+    .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const updateAccountantBySchool = async (id: string, schoolId: string, data: Partial<IAccountantInput>) => {

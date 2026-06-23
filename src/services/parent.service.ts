@@ -14,19 +14,23 @@ export const createParent = async (data: IParentInput, others: Record<string, un
 };
 
 export const getAllParents = async () => {
-    return await Parent.find().limit(20).sort({ createdAt: -1 });
+    return await Parent.find()
+        .populate('userId', 'name email profileImage role is_active -_id')
+        .limit(20).sort({ createdAt: -1 });
 };
 
 export const getAllParentsBySchool = async (schoolId: string) => {
     const studentRecords = await Student.find({ schoolId }).select('parentId').lean();
     const parentIds = studentRecords.map(s => s.parentId).filter(Boolean);
     return await Parent.find({ _id: { $in: parentIds } })
+        .populate('userId', 'name email profileImage role is_active -_id')
         .limit(20)
         .sort({ createdAt: -1 });
 };
 
 export const getParentById = async (id: string) => {
-    return await Parent.findById(id);
+    return await Parent.findById(id)
+        .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const getParentBySchool = async (id: string, schoolId: string) => {
@@ -34,7 +38,8 @@ export const getParentBySchool = async (id: string, schoolId: string) => {
     if (!parent) return null;
     const student = await Student.findOne({ parentId: id, schoolId });
     if (!student) return null;
-    return await Parent.findById(id);
+    return await Parent.findById(id)
+        .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const updateParent = async (id: string, data: IParentInput) => {
@@ -46,7 +51,8 @@ export const updateParentBySchool = async (id: string, schoolId: string, data: P
     if (!parent) return null;
     const student = await Student.findOne({ parentId: id, schoolId });
     if (!student) return null;
-    return await Parent.findByIdAndUpdate(id, data, { returnDocument: 'after', runValidators: true });
+    return await Parent.findByIdAndUpdate(id, data, { returnDocument: 'after', runValidators: true })
+        .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const hardDeleteParent = async (id: string) => {
@@ -64,9 +70,11 @@ export const hardDeleteParentBySchool = async (id: string, schoolId: string) => 
 export const getParentByStudentId = async (studentId: string) => {
     const student = await Student.findById(studentId).select('parentId').lean();
     if (!student || !student.parentId) return null;
-    return await Parent.findById(student.parentId);
+    return await Parent.findById(student.parentId)
+        .populate('userId', 'name email profileImage role is_active -_id');
 };
 
 export const getStudentByParentId = async (parentId: string) => {
-    return await Student.findOne({ parentId });
+    return await Student.findOne({ parentId })
+        .populate('userId', 'name email profileImage role is_active -_id');
 };
