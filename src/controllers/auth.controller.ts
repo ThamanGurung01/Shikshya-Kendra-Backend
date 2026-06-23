@@ -26,7 +26,7 @@ user.refresh_token=refreshToken;
 user.lastlogin=new Date();
 await user.save();
 resCookie(res,refreshToken,token);
-return sendSuccess(res,"Login successful",{id:user._id,email:user.email,role:user.role});
+return sendSuccess(res,"Login successful",{id:user._id,name:user.name,email:user.email,profileImage:user.profileImage,role:user.role});
 }catch(error){  
   console.error("Login error:", error);
 return sendError(res,"Authentication failed",undefined,500);
