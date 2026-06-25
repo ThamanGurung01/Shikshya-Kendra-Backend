@@ -156,7 +156,7 @@ try{
             ...(parsedStudentData.documents && {documents: parsedStudentData.documents}),
             ...(parsedStudentData.healthInfo && {healthInfo: parsedStudentData.healthInfo}),
         },{},session);
-        const enrollmentStatus=parsedStudentData.studentEnrollmentStatus||"pending";
+        const enrollmentStatus = parsedStudentData.status || "active";
         const enrollmentData: enrollmentService.CreateEnrollmentData = {
             studentId:student._id.toString(),
             schoolId:schoolId.toString(),
@@ -167,11 +167,11 @@ try{
             ...(parsedStudentData.promotedFromEnrollmentId && {promotedFromEnrollmentId:parsedStudentData.promotedFromEnrollmentId}),
             studentEnrollmentStatus:enrollmentStatus,
         };
-        if(enrollmentStatus==="enrolled") enrollmentData.joinedAt=new Date();
-        if(["dropped","completed","failed","withdrawn","cancelled"].includes(enrollmentStatus)){
+        if(enrollmentStatus==="active") enrollmentData.joinedAt=new Date();
+        if(["dropped","graduated","transferred"].includes(enrollmentStatus)){
             enrollmentData.leftAt=new Date();
         }
-        await enrollmentService.createStudentEnrollment(enrollmentData,session);
+        const createdEnrollment = await enrollmentService.createStudentEnrollment(enrollmentData,session);
         await session.commitTransaction();
         return sendSuccess(res,"Student created successfully",{
             name:user.name,
@@ -184,6 +184,7 @@ try{
             contact:student.contact,
             student_email:student.student_email,
             studentName:student.studentName,
+            enrollment:createdEnrollment,
         },201);
     }catch(error){
         await session.abortTransaction();
@@ -202,13 +203,23 @@ try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const students=await studentService.getAllStudentsBySchool(req.schoolId);
     if(students.length===0) return sendSuccess(res,"Student not found",[],200);
-    sendSuccess(res, "Students retrieved successfully", students, 200);
+    // Attach enrollment data to each student
+    const studentIds = students.map(s => (s._id as Types.ObjectId).toString());
+    const enrollments = await enrollmentService.getStudentEnrollmentsByStudentIds(studentIds);
+    const enrollmentMap = new Map(enrollments.map(e => [e.studentId.toString(), e]));
+    const studentsWithEnrollment = students.map(s => {
+        const data: Record<string, unknown> = s.toObject() as unknown as Record<string, unknown>;
+        const enrollment = enrollmentMap.get((s._id as Types.ObjectId).toString());
+        if (enrollment) data.enrollment = enrollment;
+        return data;
+    });
+    sendSuccess(res, "Students retrieved successfully", studentsWithEnrollment, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
 }}
 //get student by id
-export const getStudentById=async(req:Request,res:Response)=>{
+export const getStudentById=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return sendError(res,"ID is required",undefined,400);
@@ -217,7 +228,14 @@ try{
     }
     const student=await studentService.getStudentById(id);
     if(!student) return sendSuccess(res,"Student not found",{},200);
-    sendSuccess(res, "Student retrieved successfully", student, 200);
+    const studentData: Record<string, unknown> = student.toObject() as unknown as Record<string, unknown>;
+
+    // Fetch enrollment with populated academic year, class, and section
+    const enrollment = await enrollmentService.getStudentEnrollmentByStudentId(id);
+    if(enrollment) {
+        studentData.enrollment = enrollment;
+    }
+    sendSuccess(res, "Student retrieved successfully", studentData, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -231,9 +249,13 @@ try{
     return sendError(res,"Invalid ID format",undefined,400);
     }
         if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+        const ownership=await studentService.getStudentSchoolId(id);
+        if(!ownership) return sendError(res,'Student not found',undefined,404);
+        if(ownership.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+        const rawIds=await studentService.getStudentRawIds(id);
+        if(!rawIds) return sendError(res,'Student not found',undefined,404);
         const currentStudent=await studentService.getStudentById(id);
         if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-        if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
         const {
           profileImageUrl, photoUrl, birthCertificateUrl,
@@ -260,7 +282,7 @@ if(!parsed.success) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
     if(Object.keys(userUpdateData).length > 0) {
-        await userService.updateUser(currentStudent.userId.toString(), userUpdateData);
+        await userService.updateUser(rawIds.userId.toString(), userUpdateData);
     }
     // Update student fields only
     const studentFields: Record<string, unknown> = {};
@@ -288,11 +310,11 @@ if(!parsed.success) {
     if(parsedData.sectionId !== undefined) enrollmentFields.sectionId = parsedData.sectionId;
     if(parsedData.rollNumber !== undefined) enrollmentFields.rollNumber = parsedData.rollNumber;
     if(parsedData.promotedFromEnrollmentId !== undefined) enrollmentFields.promotedFromEnrollmentId = parsedData.promotedFromEnrollmentId;
-    if(parsedData.studentEnrollmentStatus !== undefined) {
-        enrollmentFields.studentEnrollmentStatus = parsedData.studentEnrollmentStatus;
-        const status=parsedData.studentEnrollmentStatus;
-        if(status==="enrolled") enrollmentFields.joinedAt=new Date();
-        if(["dropped","completed","failed","withdrawn","cancelled"].includes(status)){
+    // Sync enrollment status from student status
+    if(parsedData.status !== undefined) {
+        enrollmentFields.studentEnrollmentStatus = parsedData.status;
+        if(parsedData.status==="active") enrollmentFields.joinedAt=new Date();
+        if(["dropped","graduated","transferred"].includes(parsedData.status)){
             enrollmentFields.leftAt=new Date();
         }
     }
@@ -313,15 +335,22 @@ if(!parsed.success) {
         }
     }
     if(hasParentData) {
-        if(!currentStudent.parentId) return sendError(res,'Student has no associated parent',undefined,400);
-        const updatedParent = await parentService.updateParent(currentStudent.parentId.toString(), parentUpdateData as any);
+        if(!rawIds.parentId) return sendError(res,'Student has no associated parent',undefined,400);
+        const updatedParent = await parentService.updateParent(rawIds.parentId.toString(), parentUpdateData as any);
         if(!updatedParent) return sendError(res,"Parent not found",undefined,404);
         const parentName = parentUpdateData.fatherName || parentUpdateData.motherName || parentUpdateData.guardianName;
         if(parentName) {
             await userService.updateUser(updatedParent.userId.toString(), { name: parentName as string });
         }
     }
-    sendSuccess(res, "Student updated successfully", student, 200);
+    // Re-fetch populated student data with enrollment for the response
+    const updatedStudent = await studentService.getStudentById(id);
+    const updatedStudentData: Record<string, unknown> = updatedStudent
+        ? (updatedStudent.toObject() as unknown as Record<string, unknown>)
+        : (student.toObject() as unknown as Record<string, unknown>);
+    const updatedEnrollment = await enrollmentService.getStudentEnrollmentByStudentId(id);
+    if (updatedEnrollment) updatedStudentData.enrollment = updatedEnrollment;
+    sendSuccess(res, "Student updated successfully", updatedStudentData, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -335,9 +364,9 @@ try{
     return sendError(res,"Invalid ID format",undefined,400);
     }
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
-    const currentStudent=await studentService.getStudentById(id);
-    if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-    if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+    const ownership=await studentService.getStudentSchoolId(id);
+    if(!ownership) return sendError(res,'Student not found',undefined,404);
+    if(ownership.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
     const student=await studentService.hardDeleteStudentBySchool(id,req.schoolId);
     if(!student) return sendError(res,"Student not found",undefined,404);
