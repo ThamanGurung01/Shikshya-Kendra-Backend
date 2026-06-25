@@ -33,20 +33,20 @@ export const getStudentEnrollmentById = async (id: string) => {
   return await StudentEnrollment.findById(id).lean();
 };
 
+export const getStudentEnrollmentsByStudentIds = async (studentIds: string[]) => {
+  return await StudentEnrollment.find({ studentId: { $in: studentIds } })
+    .populate('academicYearId', 'name startDate endDate isCurrent')
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .lean();
+};
+
 export const getStudentEnrollmentByStudentId = async (studentId: string) => {
   return await StudentEnrollment.findOne({ studentId })
     .populate('academicYearId', 'name startDate endDate isCurrent')
     .populate('classId', 'name')
     .populate('sectionId', 'name')
     .sort({ createdAt: -1 })
-    .lean();
-};
-
-export const getStudentEnrollmentByStudentAndAcademicYear = async (studentId: string, academicYearId: string) => {
-  return await StudentEnrollment.findOne({ studentId, academicYearId })
-    .populate('academicYearId', 'name startDate endDate isCurrent')
-    .populate('classId', 'name')
-    .populate('sectionId', 'name')
     .lean();
 };
 

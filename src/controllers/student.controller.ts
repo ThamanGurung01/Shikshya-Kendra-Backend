@@ -171,7 +171,7 @@ try{
         if(["dropped","completed","failed","withdrawn","cancelled"].includes(enrollmentStatus)){
             enrollmentData.leftAt=new Date();
         }
-        await enrollmentService.createStudentEnrollment(enrollmentData,session);
+        const createdEnrollment = await enrollmentService.createStudentEnrollment(enrollmentData,session);
         await session.commitTransaction();
         return sendSuccess(res,"Student created successfully",{
             name:user.name,
@@ -184,6 +184,7 @@ try{
             contact:student.contact,
             student_email:student.student_email,
             studentName:student.studentName,
+            enrollment:createdEnrollment,
         },201);
     }catch(error){
         await session.abortTransaction();
@@ -202,7 +203,17 @@ try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const students=await studentService.getAllStudentsBySchool(req.schoolId);
     if(students.length===0) return sendSuccess(res,"Student not found",[],200);
-    sendSuccess(res, "Students retrieved successfully", students, 200);
+    // Attach enrollment data to each student
+    const studentIds = students.map(s => (s._id as Types.ObjectId).toString());
+    const enrollments = await enrollmentService.getStudentEnrollmentsByStudentIds(studentIds);
+    const enrollmentMap = new Map(enrollments.map(e => [e.studentId.toString(), e]));
+    const studentsWithEnrollment = students.map(s => {
+        const data: Record<string, unknown> = s.toObject() as unknown as Record<string, unknown>;
+        const enrollment = enrollmentMap.get((s._id as Types.ObjectId).toString());
+        if (enrollment) data.enrollment = enrollment;
+        return data;
+    });
+    sendSuccess(res, "Students retrieved successfully", studentsWithEnrollment, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -332,9 +343,14 @@ if(!parsed.success) {
             await userService.updateUser(updatedParent.userId.toString(), { name: parentName as string });
         }
     }
-    // Re-fetch populated student data for the response
+    // Re-fetch populated student data with enrollment for the response
     const updatedStudent = await studentService.getStudentById(id);
-    sendSuccess(res, "Student updated successfully", updatedStudent || student, 200);
+    const updatedStudentData: Record<string, unknown> = updatedStudent
+        ? (updatedStudent.toObject() as unknown as Record<string, unknown>)
+        : (student.toObject() as unknown as Record<string, unknown>);
+    const updatedEnrollment = await enrollmentService.getStudentEnrollmentByStudentId(id);
+    if (updatedEnrollment) updatedStudentData.enrollment = updatedEnrollment;
+    sendSuccess(res, "Student updated successfully", updatedStudentData, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
