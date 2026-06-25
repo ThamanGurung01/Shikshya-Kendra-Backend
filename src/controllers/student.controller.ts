@@ -208,7 +208,7 @@ try{
 sendError(res,"Internal Server Error",undefined,500);
 }}
 //get student by id
-export const getStudentById=async(req:Request,res:Response)=>{
+export const getStudentById=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     const {id}=req.params;
     if(!id || Array.isArray(id)) return sendError(res,"ID is required",undefined,400);
@@ -217,7 +217,14 @@ try{
     }
     const student=await studentService.getStudentById(id);
     if(!student) return sendSuccess(res,"Student not found",{},200);
-    sendSuccess(res, "Student retrieved successfully", student, 200);
+    const studentData: Record<string, unknown> = student.toObject() as unknown as Record<string, unknown>;
+
+    // Fetch enrollment with populated academic year, class, and section
+    const enrollment = await enrollmentService.getStudentEnrollmentByStudentId(id);
+    if(enrollment) {
+        studentData.enrollment = enrollment;
+    }
+    sendSuccess(res, "Student retrieved successfully", studentData, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -231,9 +238,13 @@ try{
     return sendError(res,"Invalid ID format",undefined,400);
     }
         if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
+        const ownership=await studentService.getStudentSchoolId(id);
+        if(!ownership) return sendError(res,'Student not found',undefined,404);
+        if(ownership.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+        const rawIds=await studentService.getStudentRawIds(id);
+        if(!rawIds) return sendError(res,'Student not found',undefined,404);
         const currentStudent=await studentService.getStudentById(id);
         if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-        if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
         const {
           profileImageUrl, photoUrl, birthCertificateUrl,
@@ -260,7 +271,7 @@ if(!parsed.success) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
     if(Object.keys(userUpdateData).length > 0) {
-        await userService.updateUser(currentStudent.userId.toString(), userUpdateData);
+        await userService.updateUser(rawIds.userId.toString(), userUpdateData);
     }
     // Update student fields only
     const studentFields: Record<string, unknown> = {};
@@ -313,15 +324,17 @@ if(!parsed.success) {
         }
     }
     if(hasParentData) {
-        if(!currentStudent.parentId) return sendError(res,'Student has no associated parent',undefined,400);
-        const updatedParent = await parentService.updateParent(currentStudent.parentId.toString(), parentUpdateData as any);
+        if(!rawIds.parentId) return sendError(res,'Student has no associated parent',undefined,400);
+        const updatedParent = await parentService.updateParent(rawIds.parentId.toString(), parentUpdateData as any);
         if(!updatedParent) return sendError(res,"Parent not found",undefined,404);
         const parentName = parentUpdateData.fatherName || parentUpdateData.motherName || parentUpdateData.guardianName;
         if(parentName) {
             await userService.updateUser(updatedParent.userId.toString(), { name: parentName as string });
         }
     }
-    sendSuccess(res, "Student updated successfully", student, 200);
+    // Re-fetch populated student data for the response
+    const updatedStudent = await studentService.getStudentById(id);
+    sendSuccess(res, "Student updated successfully", updatedStudent || student, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
@@ -335,9 +348,9 @@ try{
     return sendError(res,"Invalid ID format",undefined,400);
     }
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
-    const currentStudent=await studentService.getStudentById(id);
-    if(!currentStudent) return sendError(res,'Student not found',undefined,404);
-    if(currentStudent.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
+    const ownership=await studentService.getStudentSchoolId(id);
+    if(!ownership) return sendError(res,'Student not found',undefined,404);
+    if(ownership.schoolId.toString() !== req.schoolId) return sendError(res,'Forbidden',undefined,403);
 
     const student=await studentService.hardDeleteStudentBySchool(id,req.schoolId);
     if(!student) return sendError(res,"Student not found",undefined,404);

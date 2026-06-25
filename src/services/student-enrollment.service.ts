@@ -34,7 +34,20 @@ export const getStudentEnrollmentById = async (id: string) => {
 };
 
 export const getStudentEnrollmentByStudentId = async (studentId: string) => {
-  return await StudentEnrollment.findOne({ studentId }).lean();
+  return await StudentEnrollment.findOne({ studentId })
+    .populate('academicYearId', 'name startDate endDate isCurrent')
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
+export const getStudentEnrollmentByStudentAndAcademicYear = async (studentId: string, academicYearId: string) => {
+  return await StudentEnrollment.findOne({ studentId, academicYearId })
+    .populate('academicYearId', 'name startDate endDate isCurrent')
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .lean();
 };
 
 export const updateStudentEnrollment = async (id: string, schoolId: string, data: Partial<IStudentEnrollmentInput>) => {

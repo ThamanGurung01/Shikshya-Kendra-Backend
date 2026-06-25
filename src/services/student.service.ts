@@ -51,6 +51,16 @@ export const getStudentById=async(id:string)=>{
         .populate('userId',userSelect);
 }
 
+// Returns just schoolId for ownership checks (unpopulated)
+export const getStudentSchoolId = async (id: string) => {
+    return await Student.findById(id).select('schoolId').lean();
+}
+
+// Returns raw ObjectId refs without population (userId, parentId, schoolId)
+export const getStudentRawIds = async (id: string) => {
+    return await Student.findById(id).select('userId parentId schoolId').lean();
+}
+
 //update
 export const updateStudent=async(id:string,data:IStudentInput)=>{
     return await Student.findByIdAndUpdate(id,data,{returnDocument:'after',runValidators: true});

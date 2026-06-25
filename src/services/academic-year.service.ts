@@ -26,6 +26,10 @@ export const getAcademicYearById = async (id: string) => {
         .lean();
 }
 
+export const getCurrentAcademicYearBySchool = async (schoolId: string) => {
+    return await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+}
+
 export const updateAcademicYear = async (id: string, schoolId: string, data: IAcademicYearInput) => {
     if (data.isCurrent) {
         await AcademicYear.updateMany(

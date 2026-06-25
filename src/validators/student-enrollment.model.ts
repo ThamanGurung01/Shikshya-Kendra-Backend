@@ -6,7 +6,7 @@ export const StudentEnrollmentSchema = z.object({
     academicYearId: z.string().min(1, "academicYearId is required"),
     classId: z.string().min(1, "classId is required"),
     sectionId: z.string().min(1, "sectionId is required"),
-    rollNumber: z.number().int().optional().refine(v=>v!==undefined),
+    rollNumber: z.coerce.number().int().optional(),
     promotedFromEnrollmentId: z.string().optional().refine(v=>v!==undefined),
     studentEnrollmentStatus: z.enum([
             "enrolled",
