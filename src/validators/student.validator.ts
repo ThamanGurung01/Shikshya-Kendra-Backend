@@ -11,7 +11,7 @@ const studentSchema=z.object({
     student_email:z.email("Invalid email address").optional().refine(v=>v!==undefined),
     schoolId:z.string(),
     userId:z.string().optional().refine(v=>v!==undefined),
-    status:z.enum(["active" , "inactive" , "transfered" , "graduated" , "suspended" , "expelled" , "withdrawn"]).default("active"),
+    status:z.enum(["active" , "transferred" , "graduated" , "dropped"]).default("active"),
     documents:z.object({
       photoUrl:z.string().optional(),
       birthCertificateUrl:z.string().optional(),
@@ -32,7 +32,7 @@ export const studentUpdate=z.object({
     contact:z.string().min(10,"Contact number must be at least 10 characters long").optional(),
     dob:z.string().min(1,"Date of birth is required").optional(),
     student_email:z.email("Invalid email address").optional(),
-    status:z.enum(["active" , "inactive" , "transfered" , "graduated" , "suspended" , "expelled" , "withdrawn"]).optional(),
+    status:z.enum(["active" , "transferred" , "graduated" , "dropped"]).optional(),
     parentId:z.string().optional(),
     name:z.string().min(3,"Name must be at least 3 characters long").optional(),
     password:z.string().min(6,"Password must be at least 6 characters long").optional(),
@@ -53,7 +53,6 @@ export const studentUpdate=z.object({
     sectionId:z.string().min(1,"sectionId is required").optional(),
     rollNumber:z.coerce.number().int().min(1,"rollNumber is required").optional(),
     promotedFromEnrollmentId:z.string().optional(),
-    studentEnrollmentStatus:z.enum(["enrolled","pending","waitlisted","dropped","completed","failed","withdrawn","cancelled"]).optional(),
 });
 export type IStudentCreate=z.infer<typeof studentSchema>;
 export interface IStudentInput extends IStudentCreate{

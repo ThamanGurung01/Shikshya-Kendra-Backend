@@ -9,15 +9,13 @@ export const StudentEnrollmentSchema = z.object({
     rollNumber: z.coerce.number().int().optional(),
     promotedFromEnrollmentId: z.string().optional().refine(v=>v!==undefined),
     studentEnrollmentStatus: z.enum([
-            "enrolled",
-            "pending",
-            "waitlisted",
-            "dropped",
-            "completed",
+            "active",
+            "promoted",
             "failed",
-            "withdrawn",
-            "cancelled",
-        ]).default("pending"),
+            "transferred",
+            "graduated",
+            "dropped",
+        ]).default("active"),
 
 });
 

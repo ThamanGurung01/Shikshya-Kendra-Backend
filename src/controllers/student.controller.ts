@@ -156,7 +156,7 @@ try{
             ...(parsedStudentData.documents && {documents: parsedStudentData.documents}),
             ...(parsedStudentData.healthInfo && {healthInfo: parsedStudentData.healthInfo}),
         },{},session);
-        const enrollmentStatus=parsedStudentData.studentEnrollmentStatus||"pending";
+        const enrollmentStatus = parsedStudentData.status || "active";
         const enrollmentData: enrollmentService.CreateEnrollmentData = {
             studentId:student._id.toString(),
             schoolId:schoolId.toString(),
@@ -167,8 +167,8 @@ try{
             ...(parsedStudentData.promotedFromEnrollmentId && {promotedFromEnrollmentId:parsedStudentData.promotedFromEnrollmentId}),
             studentEnrollmentStatus:enrollmentStatus,
         };
-        if(enrollmentStatus==="enrolled") enrollmentData.joinedAt=new Date();
-        if(["dropped","completed","failed","withdrawn","cancelled"].includes(enrollmentStatus)){
+        if(enrollmentStatus==="active") enrollmentData.joinedAt=new Date();
+        if(["dropped","graduated","transferred"].includes(enrollmentStatus)){
             enrollmentData.leftAt=new Date();
         }
         const createdEnrollment = await enrollmentService.createStudentEnrollment(enrollmentData,session);
@@ -310,11 +310,11 @@ if(!parsed.success) {
     if(parsedData.sectionId !== undefined) enrollmentFields.sectionId = parsedData.sectionId;
     if(parsedData.rollNumber !== undefined) enrollmentFields.rollNumber = parsedData.rollNumber;
     if(parsedData.promotedFromEnrollmentId !== undefined) enrollmentFields.promotedFromEnrollmentId = parsedData.promotedFromEnrollmentId;
-    if(parsedData.studentEnrollmentStatus !== undefined) {
-        enrollmentFields.studentEnrollmentStatus = parsedData.studentEnrollmentStatus;
-        const status=parsedData.studentEnrollmentStatus;
-        if(status==="enrolled") enrollmentFields.joinedAt=new Date();
-        if(["dropped","completed","failed","withdrawn","cancelled"].includes(status)){
+    // Sync enrollment status from student status
+    if(parsedData.status !== undefined) {
+        enrollmentFields.studentEnrollmentStatus = parsedData.status;
+        if(parsedData.status==="active") enrollmentFields.joinedAt=new Date();
+        if(["dropped","graduated","transferred"].includes(parsedData.status)){
             enrollmentFields.leftAt=new Date();
         }
     }

@@ -9,7 +9,7 @@ export interface IStudent{
     student_email?:string;
     schoolId:Types.ObjectId;
     userId:Types.ObjectId;
-    status:"active" | "inactive" | "transfered" | "graduated" | "suspended" | "expelled" | "withdrawn";
+    status:"active" | "transferred" | "graduated" | "dropped";
     parentId?: Types.ObjectId|null;
     documents?: {
       photoUrl?: string;
@@ -35,7 +35,7 @@ const studentSchema=new Schema<IStudent>({
     student_email:{type:String},
     schoolId:{type:Types.ObjectId,ref:'School',required:true},
     userId:{type:Types.ObjectId,ref:'User',required:true},
-    status:{type:String,enum:["active","inactive","transfered","graduated","suspended","expelled","withdrawn"],default:"active"},
+    status:{type:String,enum:["active","transferred","graduated","dropped"],default:"active"},
     parentId:{type:Types.ObjectId,ref:'Parent', default:null},
     documents:{
       type:new Schema({
