@@ -14,6 +14,7 @@ import subjectRouter from './routes/subject.route';
 import teacherRouter from './routes/teacher.route';
 import librarianRouter from './routes/librarian.route';
 import accountantRouter from './routes/accountant.route';
+import adminRouter from './routes/admin.route';
 
 const app = express();
 app.use(cors({
@@ -34,8 +35,9 @@ app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs, {
         Section: 5,
         Subject: 6,
         Teacher: 7,
-        Librarian: 8,
-        Accountant: 9,
+        Admin: 8,
+        Librarian: 9,
+        Accountant: 10,
       };
 
       return (tagOrder[leftTag] ?? Number.MAX_SAFE_INTEGER) - (tagOrder[rightTag] ?? Number.MAX_SAFE_INTEGER);
@@ -53,6 +55,7 @@ app.use('/api/v1/subject', subjectRouter);
 app.use('/api/v1/teacher', teacherRouter);
 app.use('/api/v1/librarian', librarianRouter);
 app.use('/api/v1/accountant', accountantRouter);
+app.use('/api/v1/admin', adminRouter);
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
 });
