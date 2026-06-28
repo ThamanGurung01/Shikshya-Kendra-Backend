@@ -169,7 +169,7 @@ export const updateTeacher = async (req: AuthenticatedRequest, res: Response) =>
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await userService.updateUser(currentTeacher.userId.toString(), userUpdateData);
+      await userService.updateUser(currentTeacher.populated('userId').toString(), userUpdateData);
     }
 
     const teacherFields: Record<string, unknown> = {};

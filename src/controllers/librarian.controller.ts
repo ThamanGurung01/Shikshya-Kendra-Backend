@@ -169,7 +169,7 @@ export const updateLibrarian = async (req: AuthenticatedRequest, res: Response) 
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await userService.updateUser(currentLibrarian.userId.toString(), userUpdateData);
+      await userService.updateUser(currentLibrarian.populated('userId').toString(), userUpdateData);
     }
 
     const librarianFields: Record<string, unknown> = {};
