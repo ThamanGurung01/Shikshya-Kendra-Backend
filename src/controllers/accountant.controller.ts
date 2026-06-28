@@ -169,7 +169,7 @@ export const updateAccountant = async (req: AuthenticatedRequest, res: Response)
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await userService.updateUser(currentAccountant.userId.toString(), userUpdateData);
+      await userService.updateUser(currentAccountant.populated('userId').toString(), userUpdateData);
     }
 
     const accountantFields: Record<string, unknown> = {};

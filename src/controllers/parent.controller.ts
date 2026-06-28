@@ -121,7 +121,7 @@ export const updateParent = async (req: AuthenticatedRequest, res: Response) => 
 
         const newName = parsedData.fatherName || parsedData.motherName || parsedData.guardianName;
         if (newName) {
-            await userService.updateUser(updatedParent.userId.toString(), { name: newName });
+            await userService.updateUser(updatedParent.populated('userId').toString(), { name: newName });
         }
 
         sendSuccess(res, "Parent updated successfully", updatedParent, 200);
