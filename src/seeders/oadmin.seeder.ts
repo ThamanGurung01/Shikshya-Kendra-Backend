@@ -1,33 +1,14 @@
-import { User } from "../models/user.model";
 import { School } from "../models/school.model";
+import { User } from "../models/user.model";
 import { hashPassword } from "../utils/hash.util";
-
-const DEFAULT_PASSWORD = "password123";
+import { connectDB } from "../configs/db";
+import { DEFAULT_PASSWORD } from "./allSeed";
 const EXAMPLE_SCHOOL_EMAIL = "example.school@test.com";
 const EXAMPLE_OADMIN_EMAIL = "oadmin@test.com";
-
-export const userData = async () => {
-    const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
-    await User.findOneAndUpdate(
-      { email: "superadmin@test.com" },
-      {
-        $set: {
-          name: "Super Admin",
-          email: "superadmin@test.com",
-          password: hashedPassword,
-          role: "superadmin",
-          is_active: true,
-        },
-      },
-      {
-        upsert: true,
-        returnDocument: "after",
-      }
-    );
-
-    console.log("Superadmin created");
-
-    const oadmin = await User.findOneAndUpdate(
+const schoolSeeder=async()=>{
+    await connectDB();
+const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
+  const oadmin = await User.findOneAndUpdate(
       { email: EXAMPLE_OADMIN_EMAIL },
       {
         $set: {
@@ -74,5 +55,6 @@ export const userData = async () => {
       }
     );
 
-    console.log("Example school and OAdmin created");
-};
+    console.log("Example school and OAdmin Seeded");
+}
+schoolSeeder();
