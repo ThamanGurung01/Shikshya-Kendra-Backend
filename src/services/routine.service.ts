@@ -462,6 +462,30 @@ export const updateBulkRoomService = async (
   );
 };
 
+export const deleteRoutineService = async (
+  schoolId: string,
+  sectionIds?: string[],
+) => {
+  if (sectionIds && sectionIds.length > 0) {
+    // Delete routines for specific sections
+    const result = await ClassRoutine.deleteMany({
+      schoolId,
+      sectionId: { $in: sectionIds },
+    });
+    return {
+      deletedCount: result.deletedCount,
+      message: `Deleted routines for ${sectionIds.length} section(s)`,
+    };
+  }
+
+  // Delete all routines for the school
+  const result = await ClassRoutine.deleteMany({ schoolId });
+  return {
+    deletedCount: result.deletedCount,
+    message: 'Deleted all routines for the school',
+  };
+};
+
 export const generateRoutineService = async (
   schoolId: string,
   payload: IGenerateRoutineInput,

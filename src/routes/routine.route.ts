@@ -5,6 +5,7 @@ import Role from '../utils/role.util';
 import {
   autoGenerateRoutine,
   deleteClassTeacherAssignment,
+  deleteRoutine,
   deleteSubjectTeacherMapping,
   getRoutine,
   getScheduleConfig,
@@ -35,6 +36,7 @@ routineRouter.delete('/class-teachers/:id', authenticate, authorize(routineRoles
 
 routineRouter.get('/routine', authenticate, authorize(routineRoles), getRoutine);
 routineRouter.post('/routine/auto-generate', authenticate, authorize(routineRoles), autoGenerateRoutine);
+routineRouter.delete('/routine/delete-routine', authenticate, authorize(routineRoles), deleteRoutine);
 routineRouter.put('/routine/swap', authenticate, authorize(routineRoles), swapRoutineCells);
 routineRouter.put('/routine/bulk-room', authenticate, authorize(routineRoles), updateBulkRoom);
 routineRouter.put('/routine/:id', authenticate, authorize(routineRoles), updateRoutineCell);

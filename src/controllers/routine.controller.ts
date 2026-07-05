@@ -14,6 +14,7 @@ import {
 } from '../validators/routine.validator';
 import {
   deleteClassTeacherAssignmentService,
+  deleteRoutineService,
   deleteSubjectTeacherMappingService,
   generateRoutineService,
   getRoutineService,
@@ -281,5 +282,29 @@ export const updateBulkRoom = async (req: AuthenticatedRequest, res: Response): 
     return sendSuccess(res, 'Room number updated for all slots successfully', data, 200);
   } catch (error: any) {
     return sendError(res, error.message || 'Error updating classroom in bulk', undefined, error.statusCode || 500);
+  }
+};
+
+export const deleteRoutine = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return sendError(res, 'School ID is required', undefined, 400);
+    }
+
+    // Get sectionIds from query params (comma-separated) or body
+    const sectionIdsQuery = singleString(req.query.sectionIds);
+    let sectionIds: string[] | undefined;
+
+    if (sectionIdsQuery) {
+      sectionIds = sectionIdsQuery.split(',').map((id) => id.trim()).filter((id) => id.length > 0);
+    } else if (req.body?.sectionIds && Array.isArray(req.body.sectionIds)) {
+      sectionIds = req.body.sectionIds;
+    }
+
+    const data = await deleteRoutineService(schoolId, sectionIds);
+    return sendSuccess(res, data.message, data, 200);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Error deleting routine', undefined, error.statusCode || 500);
   }
 };
