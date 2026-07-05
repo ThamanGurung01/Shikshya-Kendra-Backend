@@ -35,6 +35,30 @@ const createHttpError = (message: string, statusCode: number) => {
 
 const getTeacherName = (teacher: any) => teacher?.teacherName || teacher?.name || teacher?.fullName || 'Unknown Teacher';
 
+const getEntityIdString = (entity: any): string | null => {
+  if (!entity) {
+    return null;
+  }
+
+  if (typeof entity === 'string') {
+    return entity;
+  }
+
+  if (entity instanceof mongoose.Types.ObjectId) {
+    return entity.toString();
+  }
+
+  if (entity._id instanceof mongoose.Types.ObjectId) {
+    return entity._id.toString();
+  }
+
+  if (typeof entity._id === 'string') {
+    return entity._id;
+  }
+
+  return null;
+};
+
 const getClassName = (classDoc: any) => classDoc?.name || 'Unknown Class';
 
 const getSectionName = (sectionDoc: any) => sectionDoc?.name || 'Unknown Section';
@@ -532,11 +556,11 @@ export const generateRoutineService = async (
   const teacherTotalLoads: Record<string, { name: string; load: number }> = {};
   const allSchoolMappings = await SubjectTeacherMapping.find({ schoolId }).populate('teacherId', 'teacherName').lean();
   for (const mapping of allSchoolMappings) {
-    if (!mapping.teacherId) {
+    const teacherKey = getEntityIdString(mapping.teacherId);
+    if (!teacherKey) {
       continue;
     }
 
-    const teacherKey = mapping.teacherId.toString();
     const teacherName = getTeacherName(mapping.teacherId);
     if (!teacherTotalLoads[teacherKey]) {
       teacherTotalLoads[teacherKey] = { name: teacherName, load: 0 };

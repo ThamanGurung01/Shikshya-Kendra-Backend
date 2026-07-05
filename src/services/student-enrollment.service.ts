@@ -24,7 +24,6 @@ export const getAllStudentEnrollments = async (
   if (filters.sectionId) query.sectionId = filters.sectionId;
 
   return await StudentEnrollment.find(query)
-    .limit(50)
     .sort({ createdAt: -1 })
     .lean();
 };

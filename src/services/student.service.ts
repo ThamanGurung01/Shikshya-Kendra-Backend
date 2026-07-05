@@ -25,8 +25,7 @@ export const getAllStudents=async()=>{
             populate:{path:'userId',select:userSelect}
         })
         .populate('schoolId',schoolSelect)
-        .populate('userId',userSelect)
-        .limit(20).sort({createdAt:-1});
+        .populate('userId',userSelect).sort({createdAt:-1});
 }
 
 export const getAllStudentsBySchool=async(schoolId:string)=>{
@@ -36,8 +35,7 @@ export const getAllStudentsBySchool=async(schoolId:string)=>{
             populate:{path:'userId',select:userSelect}
         })
         .populate('schoolId',schoolSelect)
-        .populate('userId',userSelect)
-        .limit(20).sort({createdAt:-1});
+        .populate('userId',userSelect).sort({createdAt:-1});
 }
 
 //getById

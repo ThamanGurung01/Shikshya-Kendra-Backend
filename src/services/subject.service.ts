@@ -6,7 +6,7 @@ export const createSubject = async (data: ISubjectInput) => {
 };
 
 export const getAllSubjects = async (schoolId: string) => {
-  return await SubjectModel.find({ schoolId }).limit(20).sort({ createdAt: -1 }).lean();
+  return await SubjectModel.find({ schoolId }).sort({ createdAt: -1 }).lean();
 };
 
 export const getSubjectById = async (id: string) => {

@@ -15,7 +15,7 @@ export const createTeacher = async (
 export const getAllTeachersBySchool = async (schoolId: string) => {
   return await Teacher.find({ schoolId })
     .populate('userId', 'name email profileImage role is_active -_id')
-    .limit(20).sort({ createdAt: -1 });
+    .sort({ createdAt: -1 });
 };
 
 export const getTeacherById = async (id: string) => {

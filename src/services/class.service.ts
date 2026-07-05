@@ -33,9 +33,6 @@ export const getAllClasses = async (schoolId: string) => {
     {
       $sort: { createdAt: -1 },
     },
-    {
-      $limit: 20,
-    },
   ]);
 };
 

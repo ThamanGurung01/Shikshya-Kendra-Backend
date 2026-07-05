@@ -15,7 +15,7 @@ export const createUser=async(data:IUserCreate, session?: any)=>{
 }
 //get all
 export const getAllUsers=async()=>{
-    return await User.find().limit(20).sort({createdAt:-1});
+    return await User.find().sort({createdAt:-1});
 }
 //get by id
 export const getUserById=async(id:string)=>{

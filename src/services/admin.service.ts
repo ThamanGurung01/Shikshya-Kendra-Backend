@@ -14,8 +14,7 @@ export const createAdmin = async (
 
 export const getAllAdminsBySchool = async (schoolId: string) => {
   return await Admin.find({ schoolId })
-    .populate('userId', 'name email profileImage role is_active -_id')
-    .limit(20).sort({ createdAt: -1 });
+    .populate('userId', 'name email profileImage role is_active -_id').sort({ createdAt: -1 });
 };
 
 export const getAdminById = async (id: string) => {

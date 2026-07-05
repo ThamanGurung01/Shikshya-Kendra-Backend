@@ -15,7 +15,6 @@ export const createSchool = async (data: ISchoolInput, others: Record<string, un
 // get all — no user population needed for list view
 export const getAllSchools = async () => {
     return await School.find()
-        .limit(20)
         .sort({ createdAt: -1 })
         .populate('owner_id', 'name email profileImage role is_active -_id')
         .lean();
