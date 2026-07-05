@@ -35,6 +35,30 @@ const createHttpError = (message: string, statusCode: number) => {
 
 const getTeacherName = (teacher: any) => teacher?.teacherName || teacher?.name || teacher?.fullName || 'Unknown Teacher';
 
+const getEntityIdString = (entity: any): string | null => {
+  if (!entity) {
+    return null;
+  }
+
+  if (typeof entity === 'string') {
+    return entity;
+  }
+
+  if (entity instanceof mongoose.Types.ObjectId) {
+    return entity.toString();
+  }
+
+  if (entity._id instanceof mongoose.Types.ObjectId) {
+    return entity._id.toString();
+  }
+
+  if (typeof entity._id === 'string') {
+    return entity._id;
+  }
+
+  return null;
+};
+
 const getClassName = (classDoc: any) => classDoc?.name || 'Unknown Class';
 
 const getSectionName = (sectionDoc: any) => sectionDoc?.name || 'Unknown Section';
@@ -438,13 +462,42 @@ export const updateBulkRoomService = async (
   );
 };
 
+export const deleteRoutineService = async (
+  schoolId: string,
+  sectionIds?: string[],
+) => {
+  if (sectionIds && sectionIds.length > 0) {
+    // Delete routines for specific sections
+    const result = await ClassRoutine.deleteMany({
+      schoolId,
+      sectionId: { $in: sectionIds },
+    });
+    return {
+      deletedCount: result.deletedCount,
+      message: `Deleted routines for ${sectionIds.length} section(s)`,
+    };
+  }
+
+  // Delete all routines for the school
+  const result = await ClassRoutine.deleteMany({ schoolId });
+  return {
+    deletedCount: result.deletedCount,
+    message: 'Deleted all routines for the school',
+  };
+};
+
 export const generateRoutineService = async (
   schoolId: string,
   payload: IGenerateRoutineInput,
 ) => {
   const { overwrite = false, roomNumbers = {} } = payload;
 
-  const config = await SchoolScheduleConfig.findOne({ schoolId }).lean();
+  // Parallelize initial data fetching
+  const [config, allSections] = await Promise.all([
+    SchoolScheduleConfig.findOne({ schoolId }).lean(),
+    SectionModel.find({ schoolId }).lean(),
+  ]);
+
   if (!config) {
     throw createHttpError('Schedule configuration not found. Please configure working days and periods first.', 400);
   }
@@ -460,7 +513,6 @@ export const generateRoutineService = async (
 
   let sectionIds = payload.sectionIds || [];
   if (sectionIds.length === 0) {
-    const allSections = await SectionModel.find({ schoolId }).lean();
     sectionIds = allSections.map((section) => section._id.toString());
   }
 
@@ -480,19 +532,22 @@ export const generateRoutineService = async (
     }
   }
 
-  const sections = await SectionModel.find({ schoolId, _id: { $in: sectionIds } }).populate('classId').lean();
+  // Parallelize section and mapping queries
+  const [sections, mappings] = await Promise.all([
+    SectionModel.find({ schoolId, _id: { $in: sectionIds } }).populate('classId').lean(),
+    SubjectTeacherMapping.find({
+      schoolId,
+      sectionId: { $in: sectionIds },
+    })
+      .populate('subjectId', 'name code')
+      .populate('teacherId', 'teacherName employeeId contact status')
+      .lean(),
+  ]);
+
   const sectionMap = new Map<string, any>();
   for (const section of sections) {
     sectionMap.set(section._id.toString(), section);
   }
-
-  const mappings = await SubjectTeacherMapping.find({
-    schoolId,
-    sectionId: { $in: sectionIds },
-  })
-    .populate('subjectId', 'name code')
-    .populate('teacherId', 'teacherName employeeId contact status')
-    .lean();
 
   if (mappings.length === 0) {
     throw createHttpError('No subject-teacher mappings found. Please map subjects to teachers and assign period counts first.', 400);
@@ -532,11 +587,11 @@ export const generateRoutineService = async (
   const teacherTotalLoads: Record<string, { name: string; load: number }> = {};
   const allSchoolMappings = await SubjectTeacherMapping.find({ schoolId }).populate('teacherId', 'teacherName').lean();
   for (const mapping of allSchoolMappings) {
-    if (!mapping.teacherId) {
+    const teacherKey = getEntityIdString(mapping.teacherId);
+    if (!teacherKey) {
       continue;
     }
 
-    const teacherKey = mapping.teacherId.toString();
     const teacherName = getTeacherName(mapping.teacherId);
     if (!teacherTotalLoads[teacherKey]) {
       teacherTotalLoads[teacherKey] = { name: teacherName, load: 0 };
@@ -585,13 +640,24 @@ export const generateRoutineService = async (
   }> = [];
 
   const solveSection = (section: any, locks: Set<string>, sectionMappings: any[]) => {
+    // Pre-compute maxPerDay for each mapping to avoid repeated calculations
+    const maxPerDayMap = new Map<string, number>();
+    for (const mapping of sectionMappings) {
+      const subjectId = mapping.subjectId._id.toString();
+      maxPerDayMap.set(subjectId, Math.ceil(mapping.periodsPerWeek / config.workingDays.length));
+    }
+
+    // Create slots with interleaved day distribution for better backtracking
     const slots: Array<{
       day: RoutineDay;
       period: IPeriodConfig;
     }> = [];
 
-    for (const day of config.workingDays) {
-      for (const period of workingPeriods) {
+    // Interleave slots across days to distribute subjects evenly
+    for (let periodIndex = 0; periodIndex < workingPeriods.length; periodIndex += 1) {
+      const period = workingPeriods[periodIndex];
+      if (!period) continue;
+      for (const day of config.workingDays) {
         slots.push({ day, period });
       }
     }
@@ -599,6 +665,8 @@ export const generateRoutineService = async (
     const totalRequired = sectionMappings.reduce((sum, mapping) => sum + mapping.periodsPerWeek, 0);
     const naCount = totalSlotsPerWeek - totalRequired;
 
+    // Sort demands by periods per week (descending) - most constrained first
+    // This helps backtracking find valid solutions faster
     const demands: Array<{ subjectId: string | null; teacherId: string | null; count: number }> = [];
     for (const mapping of sectionMappings) {
       demands.push({
@@ -607,6 +675,9 @@ export const generateRoutineService = async (
         count: mapping.periodsPerWeek,
       });
     }
+
+    // Sort by count descending (most constrained subjects first)
+    demands.sort((a, b) => b.count - a.count);
 
     if (naCount > 0) {
       demands.push({ subjectId: null, teacherId: null, count: naCount });
@@ -659,14 +730,12 @@ export const generateRoutineService = async (
             }
           }
 
-          const mapping = sectionMappings.find((item) => item.subjectId._id.toString() === demand.subjectId);
-          if (mapping) {
-            const maxPerDay = Math.ceil(mapping.periodsPerWeek / config.workingDays.length);
-            const daySubjectKey = `${slot.day}:${demand.subjectId}`;
-            const currentCount = dailySubjectCount.get(daySubjectKey) || 0;
-            if (currentCount >= maxPerDay) {
-              continue;
-            }
+          // Use pre-computed maxPerDay
+          const maxPerDay = maxPerDayMap.get(demand.subjectId) || 0;
+          const daySubjectKey = `${slot.day}:${demand.subjectId}`;
+          const currentCount = dailySubjectCount.get(daySubjectKey) || 0;
+          if (currentCount >= maxPerDay) {
+            continue;
           }
         }
 
@@ -778,11 +847,7 @@ export const generateRoutineService = async (
     );
   }
 
-  if (overwrite) {
-    await ClassRoutine.deleteMany({ schoolId, sectionId: { $in: sectionIds } });
-  } else {
-    await ClassRoutine.deleteMany({ schoolId, sectionId: { $in: sectionIds } });
-  }
+  await ClassRoutine.deleteMany({ schoolId, sectionId: { $in: sectionIds } });
 
   const documents: Array<Record<string, unknown>> = [];
 

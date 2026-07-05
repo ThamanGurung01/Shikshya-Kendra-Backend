@@ -450,10 +450,10 @@ import {
  */
 const adminRouter = Router();
 
-adminRouter.post('/', authenticate, authorize([Role.OADMIN]), createAdmin);
-adminRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllAdmins);
-adminRouter.get('/:id', authenticate, authorize([Role.OADMIN]), getAdminById);
-adminRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateAdmin);
-adminRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteAdmin);
+adminRouter.post('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), createAdmin);
+adminRouter.get('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAllAdmins);
+adminRouter.get('/:id', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAdminById);
+adminRouter.put('/:id', authenticate, authorize([Role.OADMIN,Role.ADMIN]), updateAdmin);
+adminRouter.delete('/:id', authenticate, authorize([Role.OADMIN,Role.ADMIN]), hardDeleteAdmin);
 
 export default adminRouter;

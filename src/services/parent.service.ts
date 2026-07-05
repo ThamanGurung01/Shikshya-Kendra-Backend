@@ -15,8 +15,7 @@ export const createParent = async (data: IParentInput, others: Record<string, un
 
 export const getAllParents = async () => {
     return await Parent.find()
-        .populate('userId', 'name email profileImage role is_active -_id')
-        .limit(20).sort({ createdAt: -1 });
+        .populate('userId', 'name email profileImage role is_active -_id').sort({ createdAt: -1 });
 };
 
 export const getAllParentsBySchool = async (schoolId: string) => {
@@ -24,7 +23,6 @@ export const getAllParentsBySchool = async (schoolId: string) => {
     const parentIds = studentRecords.map(s => s.parentId).filter(Boolean);
     return await Parent.find({ _id: { $in: parentIds } })
         .populate('userId', 'name email profileImage role is_active -_id')
-        .limit(20)
         .sort({ createdAt: -1 });
 };
 

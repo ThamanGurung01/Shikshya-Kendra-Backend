@@ -47,8 +47,6 @@ const schoolScheduleConfigSchema = new Schema<ISchoolScheduleConfig>(
   { timestamps: true },
 );
 
-schoolScheduleConfigSchema.index({ schoolId: 1 }, { unique: true });
-
 export const SchoolScheduleConfig =
   (mongoose.models.SchoolScheduleConfig as Model<ISchoolScheduleConfig>) ||
   mongoose.model<ISchoolScheduleConfig>('SchoolScheduleConfig', schoolScheduleConfigSchema);

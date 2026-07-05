@@ -14,8 +14,7 @@ export const createAccountant = async (
 
 export const getAllAccountantsBySchool = async (schoolId: string) => {
   return await Accountant.find({ schoolId })
-    .populate('userId', 'name email profileImage role is_active -_id')
-    .limit(20).sort({ createdAt: -1 });
+    .populate('userId', 'name email profileImage role is_active -_id').sort({ createdAt: -1 });
 };
 
 export const getAccountantById = async (id: string) => {

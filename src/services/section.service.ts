@@ -6,11 +6,11 @@ export const createSection = async (data: ISectionInput) => {
 };
 
 export const getAllSections = async () => {
-  return await SectionModel.find().limit(20).sort({ createdAt: -1 }).lean();
+  return await SectionModel.find().sort({ createdAt: -1 }).lean();
 };
 
 export const getAllSectionsBySchool = async (schoolId: string) => {
-  return await SectionModel.find({ schoolId }).limit(20).sort({ createdAt: -1 }).lean();
+  return await SectionModel.find({ schoolId }).sort({ createdAt: -1 }).lean();
 };
 
 export const getSectionById = async (id: string) => {
@@ -18,7 +18,7 @@ export const getSectionById = async (id: string) => {
 };
 //get by classId
 export const getSectionsByClassId=async(classId:string,schoolId:string)=>{
-    return await SectionModel.find({classId:classId,schoolId:schoolId}).limit(20).sort({createdAt:-1});
+    return await SectionModel.find({classId:classId,schoolId:schoolId}).sort({createdAt:-1});
 }
 export const updateSection = async (id: string, data: ISectionInput) => {
   return await SectionModel.findByIdAndUpdate(id, data, {

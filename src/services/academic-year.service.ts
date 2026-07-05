@@ -15,7 +15,6 @@ export const createAcademicYear = async (data: IAcademicYearInput, others: Recor
 // get all — no user population needed for list view
 export const getAllAcademicYears = async (schoolId: string) => {
     return await AcademicYear.find({ schoolId })
-        .limit(20)
         .sort({ createdAt: -1 })
         .lean();
 }
