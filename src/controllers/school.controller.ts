@@ -9,6 +9,7 @@ import { hashPassword } from '../utils/hash.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { generateUserEmail } from '../utils/email.util';
+import { School } from '../models/school.model';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
@@ -42,6 +43,12 @@ function buildDocuments(body: any, panUrl?: string, regUrl?: string) {
     ...(panValue && { panCertificate: { type: panType ?? 'image', value: panValue } }),
     ...(regValue && { registrationCertificate: regValue }),
   };
+}
+
+/** Safe helper to get owner ID string whether populated or not */
+function getOwnerIdString(owner: any): string {
+  if (!owner) return '';
+  return owner._id ? owner._id.toString() : owner.toString();
 }
 
 // ─── Create School ───────────────────────────────────────────────────────────
@@ -197,8 +204,9 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
 
     // Superadmin can update any school without owner check
     if (req.role !== 'superadmin') {
-      console.log('Current school owner_id:', currentSchool.owner_id._id.toString(), 'Requesting userId:', req.userId);
-      if (currentSchool.owner_id._id.toString() !== req.userId) {
+      const ownerIdStr = getOwnerIdString(currentSchool.owner_id);
+      console.log('Current school owner_id:', ownerIdStr, 'Requesting userId:', req.userId);
+      if (ownerIdStr !== req.userId) {
         return sendError(res, 'Forbidden: You do not own this school', undefined, 403);
       }
     }
@@ -210,7 +218,11 @@ export const updateSchool = async (req: AuthenticatedRequest, res: Response) => 
       userUpdateData.password = await hashPassword(parsedData.password);
     }
     if (Object.keys(userUpdateData).length > 0) {
-      await userService.updateUser(currentSchool.owner_id._id.toString(), userUpdateData);
+      const ownerIdStr = getOwnerIdString(currentSchool.owner_id);
+      if (!ownerIdStr) {
+        return sendError(res, 'School owner not found', undefined, 404);
+      }
+      await userService.updateUser(ownerIdStr, userUpdateData);
     }
 
     const school = await schoolService.updateSchool(id, parsedData);
@@ -233,6 +245,34 @@ export const hardDeleteSchool = async (req: Request, res: Response) => {
     const school = await schoolService.hardDeleteSchool(id);
     if (!school) return sendError(res, 'School not found', undefined, 404);
     sendSuccess(res, 'School permanently deleted successfully', school, 200);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+
+// ─── Toggle Suspension ──────────────────────────────────────────────────────
+export const toggleSuspension = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) return sendError(res, 'ID is required', undefined, 400);
+    if (!Types.ObjectId.isValid(id)) {
+      return sendError(res, 'Invalid ID format', undefined, 400);
+    }
+    const school = await School.findById(id);
+    if (!school) return sendError(res, 'School not found', undefined, 404);
+
+    school.suspendedAt = school.suspendedAt ? null : new Date();
+    await school.save();
+
+    const populatedSchool = await school.populate('owner_id', '-password -refresh_token');
+
+    sendSuccess(
+      res,
+      school.suspendedAt ? 'School suspended successfully' : 'School unsuspended successfully',
+      populatedSchool,
+      200
+    );
   } catch (error) {
     console.error(error);
     sendError(res, 'Internal Server Error', undefined, 500);

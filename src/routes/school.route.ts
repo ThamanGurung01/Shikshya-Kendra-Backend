@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { createSchool, hardDeleteSchool,getAllSchools,getSchoolById,updateSchool } from '../controllers/school.controller';
+import { createSchool, hardDeleteSchool,getAllSchools,getSchoolById,updateSchool, toggleSuspension } from '../controllers/school.controller';
 import { authorize } from '../middlewares/role.middleware';
 import Role from '../utils/role.util';
 import { uploadMiddleware } from '../middlewares/upload.middleware';
@@ -452,5 +452,6 @@ schoolRouter.post('/',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),upl
 schoolRouter.get('/',authenticate,authorize([Role.SUPERADMIN,Role.OADMIN]),getAllSchools);
 schoolRouter.get('/:id',authenticate,getSchoolById);
 schoolRouter.put('/:id',authenticate,authorize([Role.SUPERADMIN, Role.OADMIN]),uploadMiddleware,updateSchool);
+schoolRouter.patch('/:id/suspend',authenticate,authorize([Role.SUPERADMIN]),toggleSuspension);
 schoolRouter.delete('/:id',authenticate,authorize([Role.SUPERADMIN]),hardDeleteSchool);
 export default schoolRouter;

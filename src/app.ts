@@ -16,6 +16,7 @@ import librarianRouter from './routes/librarian.route';
 import accountantRouter from './routes/accountant.route';
 import adminRouter from './routes/admin.route';
 import routineRouter from './routes/routine.route';
+import fileRouter from './routes/file.route';
 
 const app = express();
 app.use(cors({
@@ -45,6 +46,7 @@ app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs, {
     },
   },
 }));
+app.use('/api/v1', fileRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/school', schoolRouter);
 app.use('/api/v1/student',studentRouter);
