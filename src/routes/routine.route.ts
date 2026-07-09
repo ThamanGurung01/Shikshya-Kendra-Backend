@@ -21,7 +21,7 @@ import {
 
 const routineRouter = Router();
 
-const routineRoles = [Role.OADMIN] as string[];
+const routineRoles = [Role.OADMIN, Role.ADMIN] as string[];
 
 routineRouter.post('/schedule-config', authenticate, authorize(routineRoles), saveScheduleConfig);
 routineRouter.get('/schedule-config', authenticate, authorize(routineRoles), getScheduleConfig);

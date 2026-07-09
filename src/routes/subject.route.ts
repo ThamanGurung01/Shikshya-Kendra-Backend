@@ -259,10 +259,10 @@ import { createSubject, getAllSubjects, getSubjectById, hardDeleteSubject, updat
  */
 const subjectRouter = Router();
 
-subjectRouter.post('/', authenticate, authorize([Role.OADMIN]), createSubject);
-subjectRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllSubjects);
+subjectRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createSubject);
+subjectRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllSubjects);
 subjectRouter.get('/:id', authenticate, getSubjectById);
-subjectRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateSubject);
-subjectRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteSubject);
+subjectRouter.put('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateSubject);
+subjectRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), hardDeleteSubject);
 
 export default subjectRouter;

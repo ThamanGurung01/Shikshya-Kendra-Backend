@@ -242,9 +242,9 @@ import { createAcademicYear, getAcademicYearById, getAllAcademicYears, hardDelet
  *         description: AcademicYear not found
  */
 const academicYearRouter=Router();
-academicYearRouter.post('/',authenticate,authorize([Role.OADMIN]),createAcademicYear);
-academicYearRouter.get('/',authenticate,authorize([Role.OADMIN]),getAllAcademicYears);
+academicYearRouter.post('/',authenticate,authorize([Role.OADMIN, Role.ADMIN]),createAcademicYear);
+academicYearRouter.get('/',authenticate,authorize([Role.OADMIN, Role.ADMIN]),getAllAcademicYears);
 academicYearRouter.get('/:id',authenticate,getAcademicYearById);
-academicYearRouter.put('/:id',authenticate,authorize([Role.OADMIN]),updateAcademicYear);
-academicYearRouter.delete('/:id',authenticate,authorize([Role.OADMIN]),hardDeleteAcademicYear);
+academicYearRouter.put('/:id',authenticate,authorize([Role.OADMIN, Role.ADMIN]),updateAcademicYear);
+academicYearRouter.delete('/:id',authenticate,authorize([Role.OADMIN, Role.ADMIN]),hardDeleteAcademicYear);
 export default academicYearRouter;

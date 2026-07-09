@@ -1,8 +1,14 @@
-import { Router } from 'express';
-import { authenticate } from '../middlewares/auth.middleware';
-import { authorize } from '../middlewares/role.middleware';
-import Role from '../utils/role.util';
-import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass } from '../controllers/class.controller';
+import { Router } from "express";
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/role.middleware";
+import Role from "../utils/role.util";
+import {
+  createClass,
+  getAllClasses,
+  getClassById,
+  hardDeleteClass,
+  updateClass,
+} from "../controllers/class.controller";
 
 /**
  * @swagger
@@ -233,10 +239,39 @@ import { createClass, getAllClasses, getClassById, hardDeleteClass, updateClass 
  */
 const classRouter = Router();
 
-classRouter.post('/', authenticate, authorize([Role.OADMIN]), createClass);
-classRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllClasses);
-classRouter.get('/:id', authenticate, getClassById);
-classRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateClass);
-classRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteClass);
+classRouter.post(
+  "/",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  createClass,
+);
+classRouter.get(
+  "/",
+  authenticate,
+  authorize([
+    Role.SUPERADMIN,
+    Role.OADMIN,
+    Role.ADMIN,
+    Role.TEACHER,
+    Role.STUDENT,
+    Role.PARENT,
+    Role.LIBRARIAN,
+    Role.ACCOUNTANT
+  ]),
+  getAllClasses,
+);
+classRouter.get("/:id", authenticate, getClassById);
+classRouter.put(
+  "/:id",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  updateClass,
+);
+classRouter.delete(
+  "/:id",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  hardDeleteClass,
+);
 
 export default classRouter;

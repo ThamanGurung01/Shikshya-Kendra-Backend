@@ -5,9 +5,9 @@ import Role from "../utils/role.util";
 import { authorize } from "../middlewares/role.middleware";
 
 const parentRouter = Router();
-parentRouter.post('/', authenticate, authorize([Role.OADMIN]), createParent);
-parentRouter.get('/', authenticate, authorize([Role.OADMIN]), getAllParents);
-parentRouter.get('/:id', authenticate, authorize([Role.OADMIN]), getParentById);
-parentRouter.put('/:id', authenticate, authorize([Role.OADMIN]), updateParent);
-parentRouter.delete('/:id', authenticate, authorize([Role.OADMIN]), hardDeleteParent);
+parentRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createParent);
+parentRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllParents);
+parentRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getParentById);
+parentRouter.put('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateParent);
+parentRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), hardDeleteParent);
 export default parentRouter;
