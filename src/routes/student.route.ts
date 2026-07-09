@@ -1,9 +1,15 @@
 import { Router } from "express";
-import {authenticate} from '../middlewares/auth.middleware';
-import { createStudent, hardDeleteStudent,getAllStudents,getStudentById,updateStudent } from '../controllers/student.controller';
+import { authenticate } from "../middlewares/auth.middleware";
+import {
+  createStudent,
+  hardDeleteStudent,
+  getAllStudents,
+  getStudentById,
+  updateStudent,
+} from "../controllers/student.controller";
 import Role from "../utils/role.util";
 import { authorize } from "../middlewares/role.middleware";
-import { uploadMiddleware } from '../middlewares/upload.middleware';
+import { uploadMiddleware } from "../middlewares/upload.middleware";
 
 /**
  * @swagger
@@ -680,10 +686,32 @@ import { uploadMiddleware } from '../middlewares/upload.middleware';
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-const studentRouter=Router();
-studentRouter.post('/',authenticate,authorize([Role.OADMIN]),uploadMiddleware,createStudent);
-studentRouter.get('/',authenticate,authorize([Role.OADMIN]),getAllStudents);
-studentRouter.get('/:id',authenticate,getStudentById);
-studentRouter.put('/:id',authenticate,authorize([Role.OADMIN]),uploadMiddleware,updateStudent);
-studentRouter.delete('/:id',authenticate,authorize([Role.OADMIN]),hardDeleteStudent);
-export default studentRouter
+const studentRouter = Router();
+studentRouter.post(
+  "/",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  uploadMiddleware,
+  createStudent,
+);
+studentRouter.get(
+  "/",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  getAllStudents,
+);
+studentRouter.get("/:id", authenticate, getStudentById);
+studentRouter.put(
+  "/:id",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  uploadMiddleware,
+  updateStudent,
+);
+studentRouter.delete(
+  "/:id",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  hardDeleteStudent,
+);
+export default studentRouter;
