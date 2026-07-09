@@ -36,7 +36,7 @@ export const downloadFile = (req: Request, res: Response): void => {
     }
 
     const parsedUrl = new URL(fileUrl);
-    const filename = path.basename(parsedUrl.pathname) || "download";
+    const filename = decodeURIComponent(path.basename(parsedUrl.pathname)) || "download";
 
     streamFileFromUrl(fileUrl, res, filename, disposition);
   } catch (error: any) {
@@ -44,3 +44,24 @@ export const downloadFile = (req: Request, res: Response): void => {
     res.status(400).json({ error: "Invalid URL provided or download failed" });
   }
 };
+
+export const uploadFile = (req: Request, res: Response): void => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: "No file uploaded" });
+      return;
+    }
+    const fileUrl = (req.file as any).path;
+    res.status(200).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: {
+        url: fileUrl,
+      },
+    });
+  } catch (error: any) {
+    console.error("File upload error:", error);
+    res.status(500).json({ success: false, message: "File upload failed" });
+  }
+};
+
