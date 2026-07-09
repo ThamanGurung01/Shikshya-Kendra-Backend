@@ -19,6 +19,7 @@ export interface ISchool{
     registrationCertificate:string;
     };
     verifiedAt?:Date|null;
+    suspendedAt?:Date|null;
     createdAt:Date;
     updatedAt:Date;
     deletedAt?:Date|null;
@@ -43,6 +44,7 @@ const schoolSchema=new Schema<ISchool>({
     registrationCertificate:{type:String,required:true}
     },
     verifiedAt:{type:Date,default:null},
+    suspendedAt:{type:Date,default:null},
     deletedAt:{type:Date,default:null}
 },{
     timestamps:{createdAt:'createdAt',updatedAt:'updatedAt'}

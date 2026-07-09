@@ -2,23 +2,36 @@ import { User } from '../models/user.model';
 import { resCookie } from '../utils/cookie.util';
 import {generateAccessToken, verifyToken } from '../utils/token.util';
 import {Request,Response,NextFunction} from "express";
+import { checkSchoolSuspension } from '../utils/suspension.util';
+
 const REFRESH_FAILED_MESSAGE = "Invalid refresh token";
 export interface AuthenticatedRequest extends Request {
     userId?: string;
     role?:string;
     schoolId?:string;
 }
-export const authenticate=(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
+export const authenticate = async (req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 try{
 const token=req.cookies.accessToken;
-if(!token) return refreshToken(req,res,next);
+if(!token) return await refreshToken(req,res,next);
 if(!process.env.ACCESS_TOKEN_SECRET) throw new Error('ACCESS_TOKEN_SECRET is not defined in environment variables');
 const decoded=verifyToken(token, process.env.ACCESS_TOKEN_SECRET);
 if(!decoded) return res.status(401).json({success:false,message:"Invalid access token"});
+
+const user = await User.findById(decoded);
+if (!user || !user.is_active) {
+  return res.status(401).json({success:false,message:"User is inactive or not found"});
+}
+
+const isSuspended = await checkSchoolSuspension(user);
+if (isSuspended) {
+  return res.status(403).json({success:false,message:"Your school has been suspended. Please contact administration."});
+}
+
 req.userId=decoded;
 next();
 }catch(error){
-    return refreshToken(req,res,next);
+    return await refreshToken(req,res,next);
 }
 }
 
@@ -30,7 +43,13 @@ try {
     const decoded=verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     if(!decoded) return res.status(401).json({success:false,message:REFRESH_FAILED_MESSAGE});
     const user=await User.findById(decoded);
-    if(!user||user.refresh_token!==refreshToken) return res.status(401).json({success:false,message:REFRESH_FAILED_MESSAGE});
+    if(!user||user.refresh_token!==refreshToken || !user.is_active) return res.status(401).json({success:false,message:REFRESH_FAILED_MESSAGE});
+    
+    const isSuspended = await checkSchoolSuspension(user);
+    if (isSuspended) {
+      return res.status(403).json({success:false,message:"Your school has been suspended. Please contact administration."});
+    }
+
     const token=generateAccessToken(decoded);
     req.userId=decoded;
     resCookie(res,"",token);
