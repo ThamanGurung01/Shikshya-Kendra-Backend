@@ -9,14 +9,19 @@ const storage = new CloudinaryStorage({
   params: async (_req: any, file: any) => {
     const lastDot = file.originalname.lastIndexOf('.');
     const baseName = lastDot !== -1 ? file.originalname.substring(0, lastDot) : file.originalname;
+    const ext = lastDot !== -1 ? file.originalname.substring(lastDot + 1).toLowerCase() : '';
+    const isImageOrPdf = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    const publicIdName = isImageOrPdf
+      ? `${Date.now()}-${baseName.replace(/\s+/g, '-')}`
+      : `${Date.now()}-${baseName.replace(/\s+/g, '-')}.${ext}`;
+
     return {
       folder: file.fieldname === 'profileImage' ? 'profile-images'
         : studentDocFields.includes(file.fieldname) ? 'student-documents'
         : file.fieldname === 'logo' ? 'school-logos'
         : 'school-documents',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'],
       resource_type: 'auto',
-      public_id: `${Date.now()}-${baseName.replace(/\s+/g, '-')}`,
+      public_id: publicIdName,
     };
   },
 });
@@ -62,3 +67,10 @@ export const uploadMiddleware = multer({
   { name: 'previousMarksheet', maxCount: 1 },
   { name: 'citizenshipOrId', maxCount: 1 },
 ]);
+
+export const uploadSingleFile = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+}).single('file');
+

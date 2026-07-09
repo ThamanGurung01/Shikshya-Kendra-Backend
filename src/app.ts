@@ -19,6 +19,7 @@ import routineRouter from './routes/routine.route';
 import fileRouter from './routes/file.route';
 import announcementRouter from './routes/announcement.route';
 import calendarEventRouter from './routes/calendar-event.route';
+import mailRouter from './routes/mail.route';
 
 const app = express();
 app.use(cors({
@@ -64,6 +65,7 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/routine', routineRouter);
 app.use('/api/v1/announcements', announcementRouter);
 app.use('/api/v1/calendar', calendarEventRouter);
+app.use('/api/v1/mail', mailRouter);
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
 });

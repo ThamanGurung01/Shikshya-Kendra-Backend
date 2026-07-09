@@ -151,7 +151,7 @@ export const streamFileFromUrl = (
       try {
         startUrl = cloudinary.utils.private_download_url(
           parsed.publicId,
-          parsed.format,
+          parsed.resourceType === "raw" ? "" : parsed.format,
           {
             resource_type: parsed.resourceType,
             type: parsed.deliveryType,
