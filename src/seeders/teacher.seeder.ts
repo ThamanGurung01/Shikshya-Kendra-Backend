@@ -23,12 +23,12 @@ const SUBJECT_PERIODS_PER_WEEK: Record<string, number> = {
   "English": 5,
   "Mathematics": 5,
   "Science": 5,
-  "Social Studies": 4,
+  "Social Studies": 5,
   "Nepali": 5,
-  "Computer": 3,
-  "General Knowledge": 3,
-  "Health & Physical Education": 2,
-  "Optional Mathematics": 3,
+  "Computer": 5,
+  "General Knowledge": 5,
+  "Health & Physical Education": 5,
+  "Optional Mathematics": 5,
 };
 
 const seedTeachers = async () => {
@@ -273,7 +273,7 @@ const seedTeachers = async () => {
       const subs = classSubjectsMap.get(cls._id.toString()) || [];
 
       for (const sub of subs) {
-        const periodsPerWeek = SUBJECT_PERIODS_PER_WEEK[sub.name] ?? 4;
+        const periodsPerWeek = SUBJECT_PERIODS_PER_WEEK[sub.name] ?? 5;
         const projectedLoadIncrement = periodsPerWeek * classSections.length;
         const selectedTeacher = pickTeacherForSubject(sub.name, projectedLoadIncrement);
         if (!selectedTeacher) {
