@@ -20,8 +20,10 @@ import fileRouter from './routes/file.route';
 import announcementRouter from './routes/announcement.route';
 import calendarEventRouter from './routes/calendar-event.route';
 import mailRouter from './routes/mail.route';
+import assignmentRouter from './routes/assignment.route';
 
 const app = express();
+
 app.use(cors({
   origin: process.env.FRONTEND_URL??'http://localhost:3000',
   credentials: true,
@@ -66,7 +68,9 @@ app.use('/api/v1/routine', routineRouter);
 app.use('/api/v1/announcements', announcementRouter);
 app.use('/api/v1/calendar', calendarEventRouter);
 app.use('/api/v1/mail', mailRouter);
+app.use('/api/v1/assignments', assignmentRouter);
 app.get('/', (req, res) => {
+
   res.send('Hello, World222!');
 });
 export default app;
