@@ -17,8 +17,14 @@ import accountantRouter from './routes/accountant.route';
 import adminRouter from './routes/admin.route';
 import routineRouter from './routes/routine.route';
 import examRouter from './routes/exam.route';
+import fileRouter from './routes/file.route';
+import announcementRouter from './routes/announcement.route';
+import calendarEventRouter from './routes/calendar-event.route';
+import mailRouter from './routes/mail.route';
+import assignmentRouter from './routes/assignment.route';
 
 const app = express();
+
 app.use(cors({
   origin: process.env.FRONTEND_URL??'http://localhost:3000',
   credentials: true,
@@ -46,6 +52,7 @@ app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs, {
     },
   },
 }));
+app.use('/api/v1', fileRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/school', schoolRouter);
 app.use('/api/v1/student',studentRouter);
@@ -60,7 +67,12 @@ app.use('/api/v1/accountant', accountantRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/routine', routineRouter);
 app.use('/api/v1/exam', examRouter);
+app.use('/api/v1/announcements', announcementRouter);
+app.use('/api/v1/calendar', calendarEventRouter);
+app.use('/api/v1/mail', mailRouter);
+app.use('/api/v1/assignments', assignmentRouter);
 app.get('/', (req, res) => {
+
   res.send('Hello, World222!');
 });
 export default app;

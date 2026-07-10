@@ -16,14 +16,14 @@ export const createSchool = async (data: ISchoolInput, others: Record<string, un
 export const getAllSchools = async () => {
     return await School.find()
         .sort({ createdAt: -1 })
-        .populate('owner_id', 'name email profileImage role is_active -_id')
+        .populate('owner_id', '-password -refresh_token')
         .lean();
 }
 
 // get by id — populate owner so frontend gets name + profileImage
 export const getSchoolById = async (id: string) => {
     return await School.findById(id)
-        .populate('owner_id', 'name email profileImage role is_active -_id')
+        .populate('owner_id', '-password -refresh_token')
         .lean();
 }
 
@@ -36,7 +36,7 @@ export const updateSchool = async (id: string, data: ISchoolUpdate) => {
     return await School.findByIdAndUpdate(id, updateData, {
         returnDocument: 'after',
         runValidators: true,
-    }).populate('owner_id', 'name email profileImage role is_active -_id').lean();
+    }).populate('owner_id', '-password -refresh_token').lean();
 }
 
 // hard delete

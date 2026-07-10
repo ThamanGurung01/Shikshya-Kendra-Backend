@@ -7,6 +7,7 @@ import { resCookie } from "../utils/cookie.util";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import { comparePassword } from "../utils/hash.util";
 import { sendError, sendSuccess } from "../utils/response.util";
+import { checkSchoolSuspension } from "../utils/suspension.util";
 const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const login=async(req:Request,res:Response)=>{
@@ -18,6 +19,12 @@ if(!parsed.success) {
 const {email,password}=parsed.data;
 const user=await User.findOne({email});
 if(!user||!user.is_active) return sendError(res,AUTH_FAILED_MESSAGE,undefined,401);
+
+const isSuspended = await checkSchoolSuspension(user);
+if (isSuspended) {
+  return sendError(res, "Your school has been suspended. Please contact administration.", undefined, 403);
+}
+
 const isMatch=await comparePassword(password,user.password);
 if(!isMatch) return sendError(res,AUTH_FAILED_MESSAGE,undefined,401);
 const token=generateAccessToken(user._id.toString());
@@ -64,6 +71,10 @@ try {
   const user = await User.findById(req.userId).select("-password -refresh_token");
   if (!user) {
     return sendError(res,"User not found",undefined,404);
+  }
+  const isSuspended = await checkSchoolSuspension(user);
+  if (isSuspended) {
+    return sendError(res, "Your school has been suspended. Please contact administration.", undefined, 403);
   }
   return sendSuccess(res,"Authenticated",user);
 } catch (error) {

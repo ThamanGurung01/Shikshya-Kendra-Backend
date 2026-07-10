@@ -6,15 +6,24 @@ const studentDocFields = ['photo', 'birthCertificate', 'transferCertificate', 'p
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (_req: any, file: any) => ({
-    folder: file.fieldname === 'profileImage' ? 'profile-images'
-      : studentDocFields.includes(file.fieldname) ? 'student-documents'
-      : file.fieldname === 'logo' ? 'school-logos'
-      : 'school-documents',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
-    resource_type: 'auto',
-    public_id: `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`,
-  }),
+  params: async (_req: any, file: any) => {
+    const lastDot = file.originalname.lastIndexOf('.');
+    const baseName = lastDot !== -1 ? file.originalname.substring(0, lastDot) : file.originalname;
+    const ext = lastDot !== -1 ? file.originalname.substring(lastDot + 1).toLowerCase() : '';
+    const isImageOrPdf = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    const publicIdName = isImageOrPdf
+      ? `${Date.now()}-${baseName.replace(/\s+/g, '-')}`
+      : `${Date.now()}-${baseName.replace(/\s+/g, '-')}.${ext}`;
+
+    return {
+      folder: file.fieldname === 'profileImage' ? 'profile-images'
+        : studentDocFields.includes(file.fieldname) ? 'student-documents'
+        : file.fieldname === 'logo' ? 'school-logos'
+        : 'school-documents',
+      resource_type: 'auto',
+      public_id: publicIdName,
+    };
+  },
 });
 
 const fileFilter = (
@@ -22,11 +31,24 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'application/pdf'];
+  const allowed = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/jpg',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain'
+  ];
   if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only images (jpg, png, webp) and PDF files are allowed'));
+    cb(new Error('Only images, PDFs, and common document formats (doc, docx, xls, xlsx, ppt, pptx, txt) are allowed'));
   }
 };
 
@@ -45,3 +67,10 @@ export const uploadMiddleware = multer({
   { name: 'previousMarksheet', maxCount: 1 },
   { name: 'citizenshipOrId', maxCount: 1 },
 ]);
+
+export const uploadSingleFile = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+}).single('file');
+

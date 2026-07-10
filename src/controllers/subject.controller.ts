@@ -6,6 +6,9 @@ import { Types } from 'mongoose';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
+import { Student } from '../models/student.model';
+import { AcademicYear } from '../models/academic-year.model';
+import { StudentEnrollment } from '../models/student-enrollment.model';
 
 export const createSubject = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.userId) return sendError(res, 'Unauthorized', undefined, 401);
@@ -37,7 +40,29 @@ export const getAllSubjects = async (req: AuthenticatedRequest, res: Response) =
     if (!Types.ObjectId.isValid(schoolId)) {
       return sendError(res, 'Invalid school ID format', undefined, 400);
     }
-    const subjects = await SubjectService.getAllSubjects(schoolId);
+
+    let classId = req.query.classId as string | undefined;
+
+    // If student, automatically fetch only their enrolled class's subjects
+    if (req.role === 'student' && req.userId) {
+      const studentDoc = await Student.findOne({ userId: new Types.ObjectId(req.userId), schoolId }).lean();
+      if (studentDoc) {
+        const currentYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+        if (currentYear) {
+          const enrollment = await StudentEnrollment.findOne({
+            schoolId,
+            studentId: studentDoc._id,
+            studentEnrollmentStatus: 'active',
+            academicYearId: currentYear._id,
+          }).lean();
+          if (enrollment) {
+            classId = enrollment.classId.toString();
+          }
+        }
+      }
+    }
+
+    const subjects = await SubjectService.getAllSubjects(schoolId, { classId });
     if (subjects.length === 0) return sendSuccess(res, 'Subject not found', [], 200);
     return sendSuccess(res, 'Subjects retrieved successfully', subjects, 200);
   } catch (error) {

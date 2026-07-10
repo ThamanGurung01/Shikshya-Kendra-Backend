@@ -10,6 +10,10 @@ import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
 import { generateUserEmail } from '../utils/email.util';
+import { Parent } from '../models/parent.model';
+import { Student } from '../models/student.model';
+import { StudentEnrollment } from '../models/student-enrollment.model';
+import { AcademicYear } from '../models/academic-year.model';
 
 export const createParent = async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -145,6 +149,54 @@ export const hardDeleteParent = async (req: AuthenticatedRequest, res: Response)
         if (!user) return sendError(res, "Associated user not found", undefined, 404);
 
         sendSuccess(res, "Parent permanently deleted successfully", parent, 200);
+    } catch (error) {
+        console.error(error);
+        sendError(res, "Internal Server Error", undefined, 500);
+    }
+};
+
+export const getParentChildren = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        if (!req.userId) return sendError(res, "Unauthorized", undefined, 401);
+        const schoolId = resolveSchoolId(req);
+        if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+        const parentDoc = await Parent.findOne({ userId: new Types.ObjectId(req.userId) }).lean();
+        if (!parentDoc) return sendSuccess(res, "Parent not found", [], 200);
+
+        const currentYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+
+        const students = await Student.find({ parentId: parentDoc._id, schoolId })
+            .populate('userId', 'name profileImage')
+            .lean();
+
+        const enrichedStudents = await Promise.all(
+            students.map(async (student: any) => {
+                const enrollment = currentYear
+                    ? await StudentEnrollment.findOne({
+                          schoolId,
+                          studentId: student._id,
+                          studentEnrollmentStatus: 'active',
+                          academicYearId: currentYear._id,
+                      })
+                          .populate('classId', 'name')
+                          .populate('sectionId', 'name')
+                          .lean()
+                    : null;
+
+                return {
+                    _id: student._id.toString(),
+                    firstName: student.studentName.split(' ')[0] || "",
+                    lastName: student.studentName.split(' ').slice(1).join(' ') || "",
+                    photo: student.userId?.profileImage || null,
+                    admissionNumber: student.admissionNumber || "",
+                    className: (enrollment as any)?.classId?.name || null,
+                    sectionName: (enrollment as any)?.sectionId?.name || null,
+                };
+            })
+        );
+
+        return sendSuccess(res, "Parent children fetched successfully", enrichedStudents, 200);
     } catch (error) {
         console.error(error);
         sendError(res, "Internal Server Error", undefined, 500);
