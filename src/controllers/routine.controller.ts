@@ -257,6 +257,7 @@ export const autoGenerateRoutine = async (req: AuthenticatedRequest, res: Respon
     const data = await generateRoutineService(schoolId, parsed.data);
     return sendSuccess(res, 'Class routine auto-generated successfully', data, 200);
   } catch (error: any) {
+    console.error('Auto Generate Routine Error:', error);
     return sendError(res, error.message || 'Error auto-generating class routine', undefined, error.statusCode || 500);
   }
 };

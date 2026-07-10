@@ -676,8 +676,20 @@ export const generateRoutineService = async (
       });
     }
 
-    // Sort by count descending (most constrained subjects first)
-    demands.sort((a, b) => b.count - a.count);
+    // Sort by count descending, then by teacher total load descending
+    demands.sort((a, b) => {
+      const loadB = b.teacherId ? teacherTotalLoads[b.teacherId]?.load || 0 : 0;
+      const loadA = a.teacherId ? teacherTotalLoads[a.teacherId]?.load || 0 : 0;
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+      if (loadB !== loadA) {
+        return loadB - loadA;
+      }
+      // Add a random tie-breaker to break deterministic gridlocks when assigning 
+      // similarly-loaded teachers in highly constrained timtetables.
+      return Math.random() - 0.5;
+    });
 
     if (naCount > 0) {
       demands.push({ subjectId: null, teacherId: null, count: naCount });
@@ -686,7 +698,28 @@ export const generateRoutineService = async (
     const assignment = new Array<number | null>(slots.length).fill(null);
     const dailySubjectCount = new Map<string, number>();
 
+    let iterations = 0;
+    const MAX_ITERATIONS = 500000;
+
     const backtrack = (slotIndex: number): boolean => {
+      iterations += 1;
+      if (iterations > MAX_ITERATIONS) {
+        const remainingDemands = demands
+          .filter(d => d.count > 0 && d.subjectId)
+          .map(d => {
+            const subjectObj = sectionMappings.find(m => m.subjectId._id.toString() === d.subjectId)?.subjectId;
+            const subjectName = subjectObj ? subjectObj.name : 'Unknown Subject';
+            const teacherName = d.teacherId ? teacherTotalLoads[d.teacherId]?.name || 'Unknown Teacher' : 'Unknown Teacher';
+            return `${subjectName} (${teacherName})`;
+          })
+          .join(', ');
+
+        throw createHttpError(
+          `Scheduling too complex or impossible for ${getClassName(section?.classId)} section ${getSectionName(section)}. Unscheduled remaining subjects: ${remainingDemands}. Please review teacher assignments (they might be booked in other classes at the same time).`,
+          422,
+        );
+      }
+
       if (slotIndex === slots.length) {
         return true;
       }
