@@ -102,54 +102,11 @@ const seedTeachers = async () => {
     await Teacher.deleteMany({});
     await User.deleteMany({ role: "teacher" });
 
-    const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
-
-    console.log("Creating 25 Teachers...");
-    const teacherDocs: any[] = [];
-
-    const teacherNames = [
-      "Ram Chandra Sharma", "Sita Devi Poudel", "Krishna Prasad Acharya",
-      "Radhika Thapa", "Bishnu Kumar Rai", "Gita Kumari Gurung",
-      "Hari Bahadur KC", "Maya Devi Shrestha", "Prakash Rijal",
-      "Sunita Sharma", "Dipak Kumar Basnet", "Anita Karki",
-      "Rajendra Tamang", "Pabitra Bhattarai", "Sagar Neupane",
-      "Bimala Acharya", "Sanjay Shrestha", "Usha Koirala",
-      "Mohan Thapa", "Laxmi Poudel",
-      "Kumari Thapa", "Devendra Sharma", "Sandhya Rana",
-      "Pradeep Ghimire", "Asha Devi",
-    ];
-
-    const employeePrefix = "TCH";
-    const genders = ["Male", "Female"];
-
-    for (let i = 0; i < 25; i++) {
-      const emailName = teacherNames[i]!.toLowerCase().replace(/\s+/g, ".");
-
-      const tUser = await new User({
-        name: teacherNames[i],
-        email: `${emailName}@shikshyakendra.edu.np`,
-        password: hashedPassword,
-        role: "teacher",
-        is_active: true,
-      }).save();
-
-      const teacherDoc = await new Teacher({
-        employeeId: `${employeePrefix}${(i + 1).toString().padStart(3, "0")}`,
-        teacherName: teacherNames[i],
-        address: "Kathmandu",
-        gender: genders[i % 2],
-        contact: `984100${(i + 1).toString().padStart(4, "0")}`,
-        dob: new Date(`198${i % 9 + 1}-0${(i % 9) + 1}-15`),
-        teacher_email: `${emailName}@shikshyakendra.edu.np`,
-        schoolId: schoolId,
-        userId: tUser._id,
-        status: "active",
-        qualification: ["B.Ed.", "M.Ed.", "Ph.D."][i % 3],
-        joinDate: new Date(`202${Math.min(i % 5, 4) + 1}-04-01`),
-      }).save();
-      teacherDocs.push(teacherDoc);
-    }
-    console.log(`${teacherDocs.length} teachers created.`);
+    // --- Configuration for Teacher Workloads ---
+    // A standard teacher teaches 5 periods a day (25 periods a week).
+    // This perfectly balances the load (e.g. 20 sections / 4 teachers = 5 each)
+    // and prevents the 6-mapping bottleneck that causes the generator to fail.
+    const MAX_MAPPINGS_PER_TEACHER = 5;
 
     console.log("Creating Subjects per class...");
     const classSubjectsMap = new Map<string, any[]>();
@@ -187,47 +144,123 @@ const seedTeachers = async () => {
     }
     console.log("Subjects created for all classes.");
 
-    const teacherLoads = new Map<string, number>();
-    teacherDocs.forEach((teacherDoc) => teacherLoads.set(teacherDoc._id.toString(), 0));
+    console.log("Calculating required subject-section mappings using ISOLATED BLOCKS...");
+    // To prevent the routine generator from failing on 100% dense timetables, we must prevent
+    // global interconnected teacher dependencies. 
+    // We do this by dividing the 20 sections into completely isolated "blocks" of 4 sections.
+    // Teachers assigned to one block will NEVER teach in another block.
+    // This breaks the scheduling problem down into 5 trivial sub-problems!
 
-    const teacherByIndexes = (indexes: number[]) => indexes.map((index) => teacherDocs[index]).filter(Boolean);
-    const subjectTeacherPools = new Map<string, any[]>([
-      ["English", teacherByIndexes([0, 1, 2, 20])],
-      ["Mathematics", teacherByIndexes([3, 4, 5, 21])],
-      ["Science", teacherByIndexes([6, 7, 8, 22])],
-      ["Social Studies", teacherByIndexes([9, 10, 23])],
-      ["Nepali", teacherByIndexes([11, 12, 24])],
-      ["Computer", teacherByIndexes([13, 14, 15])],
-      ["General Knowledge", teacherByIndexes([16, 17])],
-      ["Health & Physical Education", teacherByIndexes([18])],
-      ["Optional Mathematics", teacherByIndexes([4, 5, 21])],
-    ]);
+    const sortedSections = [...sections].map(s => {
+       const cls = classes.find(c => c._id.toString() === s.classId.toString());
+       return {
+           ...s,
+           classNum: extractClassNumber(cls?.name || ""),
+           className: cls?.name || ""
+       };
+    }).sort((a, b) => {
+        if (a.classNum !== b.classNum) return b.classNum - a.classNum; // Descending Class
+        return (a.name || "").localeCompare(b.name || "");
+    });
 
-    const pickTeacherForSubject = (subjectName: string, additionalLoad: number) => {
-      const candidatePool = (subjectTeacherPools.get(subjectName) || teacherDocs).filter(Boolean);
-      if (candidatePool.length === 0) {
-        return null;
-      }
+    const SECTION_BLOCK_SIZE = 4;
+    const sectionBlocks = [];
+    for (let i = 0; i < sortedSections.length; i += SECTION_BLOCK_SIZE) {
+        sectionBlocks.push(sortedSections.slice(i, i + SECTION_BLOCK_SIZE));
+    }
 
-      const underCapacity = candidatePool.filter((candidate) => {
-        const currentLoad = teacherLoads.get(candidate._id.toString()) || 0;
-        return currentLoad + additionalLoad <= MAX_WEEKLY_LOAD_PER_TEACHER;
-      });
+    const teacherChunks: any[][] = [];
+    let totalMappings = 0;
 
-      const source = underCapacity.length > 0 ? underCapacity : candidatePool;
-      let selected = source[0];
-      let minLoad = teacherLoads.get(selected._id.toString()) || 0;
+    for (const block of sectionBlocks) {
+        const subjectsInBlock = new Set<string>();
+        const mappingsForBlock: any[] = [];
 
-      for (const candidate of source) {
-        const currentLoad = teacherLoads.get(candidate._id.toString()) || 0;
-        if (currentLoad < minLoad) {
-          selected = candidate;
-          minLoad = currentLoad;
+        for (const sec of block) {
+             const subs = classSubjectsMap.get(sec.classId.toString()) || [];
+             for (const sub of subs) {
+                 subjectsInBlock.add(sub.name);
+                 mappingsForBlock.push({
+                     classId: sec.classId,
+                     sectionId: sec._id,
+                     subjectId: sub._id,
+                     subjectName: sub.name,
+                     classNum: sec.classNum,
+                     sectionName: sec.name
+                 });
+             }
         }
-      }
 
-      return selected;
-    };
+        // For each subject in this isolated block, assign exactly ONE teacher.
+        // This teacher will teach this subject to all 4 sections in the block (20 periods/week).
+        for (const subjectName of subjectsInBlock) {
+             const mappingsForTeacher = mappingsForBlock.filter(m => m.subjectName === subjectName);
+             teacherChunks.push(mappingsForTeacher);
+             totalMappings += mappingsForTeacher.length;
+        }
+    }
+
+    const numTeachersNeeded = teacherChunks.length;
+    console.log(`Need ${numTeachersNeeded} teachers to cover ${totalMappings} mappings using isolated blocks.`);
+
+    const hashedPassword = await hashPassword(DEFAULT_PASSWORD);
+    console.log(`Creating ${numTeachersNeeded} Teachers...`);
+    const teacherDocs: any[] = [];
+
+    const teacherNames = [
+      "Ram Chandra Sharma", "Sita Devi Poudel", "Krishna Prasad Acharya",
+      "Radhika Thapa", "Bishnu Kumar Rai", "Gita Kumari Gurung",
+      "Hari Bahadur KC", "Maya Devi Shrestha", "Prakash Rijal",
+      "Sunita Sharma", "Dipak Kumar Basnet", "Anita Karki",
+      "Rajendra Tamang", "Pabitra Bhattarai", "Sagar Neupane",
+      "Bimala Acharya", "Sanjay Shrestha", "Usha Koirala",
+      "Mohan Thapa", "Laxmi Poudel",
+      "Kumari Thapa", "Devendra Sharma", "Sandhya Rana",
+      "Pradeep Ghimire", "Asha Devi",
+      "Gopal Prasad", "Saraswati Shrestha", "Kamal Thapa",
+      "Sushma Karki", "Ramesh Bista", "Sabita Gurung",
+      "Bikash Tamang", "Menuka Poudel", "Santosh Rai",
+      "Lila Devi", "Nabin Sharma", "Kabita Acharya",
+      "Roshan Shrestha", "Sujata Thapa", "Sujan Koirala",
+      "Rupa Magar", "Dinesh KC", "Manju Basnet",
+      "Anil Gurung", "Sarita Rijal", "Bipin Sharma",
+      "Ganga Devi", "Ashok Thapa", "Nirmala Poudel",
+      "Surendra Shrestha"
+    ];
+
+    const employeePrefix = "TCH";
+    const genders = ["Male", "Female"];
+
+    for (let i = 0; i < numTeachersNeeded; i++) {
+      // Fallback in case we somehow need more than 50 teachers
+      const name = teacherNames[i] || `Teacher ${i + 1}`; 
+      const emailName = name.toLowerCase().replace(/\s+/g, ".");
+
+      const tUser = await new User({
+        name: name,
+        email: `${emailName}@shikshyakendra.edu.np`,
+        password: hashedPassword,
+        role: "teacher",
+        is_active: true,
+      }).save();
+
+      const teacherDoc = await new Teacher({
+        employeeId: `${employeePrefix}${(i + 1).toString().padStart(3, "0")}`,
+        teacherName: name,
+        address: "Kathmandu",
+        gender: genders[i % 2],
+        contact: `984100${(i + 1).toString().padStart(4, "0")}`,
+        dob: new Date(`198${i % 9 + 1}-0${(i % 9) + 1}-15`),
+        teacher_email: `${emailName}@shikshyakendra.edu.np`,
+        schoolId: schoolId,
+        userId: tUser._id,
+        status: "active",
+        qualification: ["B.Ed.", "M.Ed.", "Ph.D."][i % 3],
+        joinDate: new Date(`202${Math.min(i % 5, 4) + 1}-04-01`),
+      }).save();
+      teacherDocs.push(teacherDoc);
+    }
+    console.log(`${teacherDocs.length} teachers created.`);
 
     console.log("Creating School Schedule Config...");
     const workingDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -254,7 +287,7 @@ const seedTeachers = async () => {
 
     for (let csIdx = 0; csIdx < sections.length; csIdx++) {
       const sec = sections[csIdx]!;
-      const classTeacherDoc = teacherDocs[csIdx % 25];
+      const classTeacherDoc = teacherDocs[csIdx % teacherDocs.length];
 
       await new ClassTeacherAssignment({
         schoolId,
@@ -265,35 +298,27 @@ const seedTeachers = async () => {
     }
     console.log(`${sections.length} class teacher assignments created.`);
 
-    console.log("Creating Subject-Teacher Mappings with balanced teacher loads...");
+    console.log("Saving grouped Subject-Teacher Mappings...");
+    const teacherLoads = new Map<string, number>();
 
-    for (let cIdx = 0; cIdx < classes.length; cIdx++) {
-      const cls = classes[cIdx]!;
-      const classSections = sections.filter(s => s.classId.toString() === cls._id.toString());
-      const subs = classSubjectsMap.get(cls._id.toString()) || [];
-
-      for (const sub of subs) {
-        const periodsPerWeek = SUBJECT_PERIODS_PER_WEEK[sub.name] ?? 5;
-        const projectedLoadIncrement = periodsPerWeek * classSections.length;
-        const selectedTeacher = pickTeacherForSubject(sub.name, projectedLoadIncrement);
-        if (!selectedTeacher) {
-          throw new Error(`Unable to select teacher for subject ${sub.name} in ${cls.name}`);
-        }
-
-        for (const sec of classSections) {
-          await new SubjectTeacherMapping({
-            schoolId,
-            classId: cls._id,
-            sectionId: sec._id,
-            subjectId: sub._id,
-            teacherId: selectedTeacher._id,
-            periodsPerWeek,
-          }).save();
-        }
-
-        const currentLoad = teacherLoads.get(selectedTeacher._id.toString()) || 0;
-        teacherLoads.set(selectedTeacher._id.toString(), currentLoad + projectedLoadIncrement);
+    for (let i = 0; i < teacherChunks.length; i++) {
+      const chunk = teacherChunks[i]!;
+      const teacherDoc = teacherDocs[i]!;
+      
+      let loadForTeacher = 0;
+      for (const req of chunk) {
+        const periodsPerWeek = SUBJECT_PERIODS_PER_WEEK[req.subjectName] ?? 5;
+        await new SubjectTeacherMapping({
+          schoolId,
+          classId: req.classId,
+          sectionId: req.sectionId,
+          subjectId: req.subjectId,
+          teacherId: teacherDoc._id,
+          periodsPerWeek,
+        }).save();
+        loadForTeacher += periodsPerWeek;
       }
+      teacherLoads.set(teacherDoc._id.toString(), loadForTeacher);
     }
 
     const sortedLoadSummary = [...teacherLoads.entries()]
@@ -317,7 +342,7 @@ const seedTeachers = async () => {
         },
       },
     ]);
-    console.log("Subject counts by class:", subjectCountPerClass);
+    console.log(`Subject counts calculated for ${subjectCountPerClass.length} classes.`);
 
     const mappingCountPerSection = await SubjectTeacherMapping.aggregate([
       { $match: { schoolId } },
@@ -328,7 +353,7 @@ const seedTeachers = async () => {
         },
       },
     ]);
-    console.log("Mapping counts by section:", mappingCountPerSection.slice(0, 10));
+    console.log(`Mapping counts calculated for ${mappingCountPerSection.length} sections.`);
 
     console.log("Teacher seeding completed successfully!");
   } catch (error) {
