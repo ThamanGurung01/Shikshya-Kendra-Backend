@@ -5,8 +5,12 @@ export const createSubject = async (data: ISubjectInput) => {
   return await SubjectModel.create(data);
 };
 
-export const getAllSubjects = async (schoolId: string) => {
-  return await SubjectModel.find({ schoolId }).sort({ createdAt: -1 }).lean();
+export const getAllSubjects = async (schoolId: string, filter?: { classId?: string | undefined }) => {
+  const query: any = { schoolId };
+  if (filter?.classId) {
+    query.classId = filter.classId;
+  }
+  return await SubjectModel.find(query).sort({ name: 1 }).lean();
 };
 
 export const getSubjectById = async (id: string) => {

@@ -66,3 +66,10 @@ export const notifyUserMailUpdate = (userId: string, unreadCount: number) => {
     io.to(`user:${userId}`).emit('mail_unread_count', { unreadCount });
   }
 };
+
+export const notifyUserAssignmentUpdate = (userId: string, count: number) => {
+  if (io) {
+    io.to(`user:${userId}`).emit("assignment_unread_count", { count });
+  }
+};
+
