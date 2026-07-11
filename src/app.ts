@@ -22,6 +22,8 @@ import announcementRouter from './routes/announcement.route';
 import calendarEventRouter from './routes/calendar-event.route';
 import mailRouter from './routes/mail.route';
 import assignmentRouter from './routes/assignment.route';
+import bookRouter from './routes/book.route';
+import libraryRouter from './routes/library.route';
 
 const app = express();
 
@@ -46,6 +48,7 @@ app.use('/api/v1/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerDocs, {
         Admin: 8,
         Librarian: 9,
         Accountant: 10,
+        Book: 11,
       };
 
       return (tagOrder[leftTag] ?? Number.MAX_SAFE_INTEGER) - (tagOrder[rightTag] ?? Number.MAX_SAFE_INTEGER);
@@ -71,6 +74,8 @@ app.use('/api/v1/announcements', announcementRouter);
 app.use('/api/v1/calendar', calendarEventRouter);
 app.use('/api/v1/mail', mailRouter);
 app.use('/api/v1/assignments', assignmentRouter);
+app.use('/api/v1/book', bookRouter);
+app.use('/api/v1/library', libraryRouter);
 app.get('/', (req, res) => {
 
   res.send('Hello, World222!');
