@@ -98,9 +98,9 @@ export const getExamRoutine = async (req: AuthenticatedRequest, res: Response) =
     const schoolId = resolveSchoolId(req);
     
     if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
-    if (!examId || !classId) return sendError(res, 'examId and classId are required', undefined, 400);
+    if (!examId) return sendError(res, 'examId is required', undefined, 400);
 
-    const routine = await ExamService.getExamRoutine(examId as string, classId as string, schoolId as string);
+    const routine = await ExamService.getExamRoutine(examId as string, classId as string | undefined, schoolId as string);
     return sendSuccess(res, 'Exam routine retrieved successfully', routine, 200);
   } catch (error) {
     console.error(error);

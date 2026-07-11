@@ -9,6 +9,12 @@ export const ExamSchema = z.object({
   allowedDays: z.array(z.string()).min(1, 'At least one allowed day is required'),
   startTime: z.string().min(1, 'Start time is required'),
   endTime: z.string().min(1, 'End time is required'),
+  note: z.string().optional(),
+  classTimes: z.array(z.object({
+    classId: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+  })).optional(),
   status: z.enum(['draft', 'upcoming', 'active', 'ended']).optional(),
 });
 
