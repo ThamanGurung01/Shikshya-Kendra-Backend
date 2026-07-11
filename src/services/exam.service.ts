@@ -3,6 +3,9 @@ import { ExamRoutineModel } from '../models/exam-routine.model';
 import { IExamInput, IExamRoutineInput } from '../validators/exam.validator';
 import { AcademicYear } from '../models/academic-year.model';
 import { SubjectModel } from '../models/subject.model';
+import { Student } from '../models/student.model';
+import { Parent } from '../models/parent.model';
+import { StudentEnrollment } from '../models/student-enrollment.model';
 
 const updateActualEndDate = async (examId: string, schoolId: string) => {
   const lastRoutine = await ExamRoutineModel.findOne({ examId, schoolId }).sort({ date: -1 }).lean();
@@ -172,4 +175,89 @@ export const deleteExamRoutineCell = async (id: string, schoolId: string) => {
   const deleted = await ExamRoutineModel.findOneAndDelete({ _id: id, schoolId });
   if (deleted) await updateActualEndDate(deleted.examId as any, schoolId);
   return deleted;
+};
+
+export const getMyExams = async (schoolId: string, role: string, userId: string, studentId?: string) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year');
+
+  let classIds: string[] | null = null; // null means all classes
+
+  if (role === 'student') {
+    const student = await Student.findOne({ userId, schoolId }).lean();
+    if (!student) throw new Error('Student not found');
+    const enrollment = await StudentEnrollment.findOne({ studentId: student._id, academicYearId: activeYear._id }).lean();
+    if (!enrollment) throw new Error('No active enrollment');
+    classIds = [String(enrollment.classId)];
+  } else if (role === 'parent') {
+    const parent = await Parent.findOne({ userId }).lean();
+    if (!parent) throw new Error('Parent not found');
+    let studentQuery: any = { parentId: parent._id, schoolId };
+    if (studentId) {
+      studentQuery._id = studentId;
+    }
+    const students = await Student.find(studentQuery).lean();
+    const studentIds = students.map(s => s._id);
+    const enrollments = await StudentEnrollment.find({ studentId: { $in: studentIds }, academicYearId: activeYear._id }).lean();
+    classIds = enrollments.map(e => String(e.classId));
+  }
+
+  // Find upcoming and active exams
+  const query: any = { schoolId, academicYearId: activeYear._id, status: { $in: ['upcoming', 'active'] } };
+  if (classIds) {
+    query.classes = { $in: classIds };
+  }
+
+  const exams = await ExamModel.find(query).populate('classes', 'name').lean();
+
+  // sort nearest upcoming first (based on startDate)
+  exams.sort((a, b) => {
+    const dateA = new Date(a.startDate as any).getTime();
+    const dateB = new Date(b.startDate as any).getTime();
+    return dateA - dateB;
+  });
+
+  return exams;
+};
+
+export const getMyExamRoutine = async (examId: string, schoolId: string, role: string, userId: string, studentId?: string) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year');
+
+  let classIds: string[] | null = null; // null means all classes
+
+  if (role === 'student') {
+    const student = await Student.findOne({ userId, schoolId }).lean();
+    if (!student) throw new Error('Student not found');
+    const enrollment = await StudentEnrollment.findOne({ studentId: student._id, academicYearId: activeYear._id }).lean();
+    if (!enrollment) throw new Error('No active enrollment');
+    classIds = [String(enrollment.classId)];
+  } else if (role === 'parent') {
+    const parent = await Parent.findOne({ userId }).lean();
+    if (!parent) throw new Error('Parent not found');
+    let studentQuery: any = { parentId: parent._id, schoolId };
+    if (studentId) {
+      studentQuery._id = studentId;
+    }
+    const students = await Student.find(studentQuery).lean();
+    const studentIds = students.map(s => s._id);
+    const enrollments = await StudentEnrollment.find({ studentId: { $in: studentIds }, academicYearId: activeYear._id }).lean();
+    classIds = enrollments.map(e => String(e.classId));
+  }
+
+  const exam = await ExamModel.findOne({ _id: examId, schoolId }).populate('classes', 'name').lean();
+  if (!exam) throw new Error('Exam not found');
+
+  // Verify the user's class is part of this exam
+  if (classIds) {
+    const hasAccess = (exam.classes as any[]).some(c => classIds!.includes(String(c._id)));
+    if (!hasAccess) throw new Error('Unauthorized: Your class is not part of this exam');
+  }
+
+  const query: any = { examId, schoolId };
+
+
+  const routine = await ExamRoutineModel.find(query).populate('subjectId', 'name code').lean();
+
+  return { exam, routine };
 };
