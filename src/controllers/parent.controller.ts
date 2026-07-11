@@ -192,6 +192,8 @@ export const getParentChildren = async (req: AuthenticatedRequest, res: Response
                     admissionNumber: student.admissionNumber || "",
                     className: (enrollment as any)?.classId?.name || null,
                     sectionName: (enrollment as any)?.sectionId?.name || null,
+                    classId: (enrollment as any)?.classId?._id?.toString() || null,
+                    sectionId: (enrollment as any)?.sectionId?._id?.toString() || null,
                 };
             })
         );

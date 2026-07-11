@@ -221,17 +221,25 @@ sendError(res,"Internal Server Error",undefined,500);
 //get student by id
 export const getStudentById=async(req:AuthenticatedRequest,res:Response)=>{
 try{
-    const {id}=req.params;
+    let {id}=req.params;
     if(!id || Array.isArray(id)) return sendError(res,"ID is required",undefined,400);
-    if (!Types.ObjectId.isValid(id)) {
-    return sendError(res,"Invalid ID format",undefined,400);
+
+    let student;
+    if (id === 'me') {
+        if (!req.userId) return sendError(res,"Unauthorized",undefined,401);
+        student = await studentService.getStudentByUserId(req.userId);
+    } else {
+        if (!Types.ObjectId.isValid(id)) {
+            return sendError(res,"Invalid ID format",undefined,400);
+        }
+        student = await studentService.getStudentById(id);
     }
-    const student=await studentService.getStudentById(id);
+
     if(!student) return sendSuccess(res,"Student not found",{},200);
     const studentData: Record<string, unknown> = student.toObject() as unknown as Record<string, unknown>;
 
     // Fetch enrollment with populated academic year, class, and section
-    const enrollment = await enrollmentService.getStudentEnrollmentByStudentId(id);
+    const enrollment = await enrollmentService.getStudentEnrollmentByStudentId((student._id as Types.ObjectId).toString());
     if(enrollment) {
         studentData.enrollment = enrollment;
     }

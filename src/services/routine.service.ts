@@ -932,3 +932,18 @@ export const generateRoutineService = async (
     classSectionsProcessed: sectionIds.length,
   };
 };
+
+export const getTeacherRoutineService = async (schoolId: string, teacherId: string) => {
+  const config = await SchoolScheduleConfig.findOne({ schoolId }).lean();
+  if (!config) {
+    throw createHttpError('Schedule configuration not found', 404);
+  }
+
+  const routine = await ClassRoutine.find({ schoolId, teacherId, slotType: 'SUBJECT' })
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .populate('subjectId', 'name code')
+    .lean();
+
+  return { config, routine };
+};
