@@ -12,9 +12,15 @@ import {
   updateExamRoutineCell,
   createExamRoutineCell,
   deleteExamRoutineCell,
+  getMyExams,
+  getMyExamRoutine,
 } from '../controllers/exam.controller';
 
 const examRouter = Router();
+
+// Teacher, Parent, Student Routes
+examRouter.get('/my-exams', authenticate, authorize([Role.TEACHER, Role.STUDENT, Role.PARENT]), getMyExams);
+examRouter.get('/my-routine', authenticate, authorize([Role.TEACHER, Role.STUDENT, Role.PARENT]), getMyExamRoutine);
 
 // Exam Routes
 examRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createExam);

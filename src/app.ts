@@ -24,7 +24,8 @@ import mailRouter from './routes/mail.route';
 import assignmentRouter from './routes/assignment.route';
 import bookRouter from './routes/book.route';
 import libraryRouter from './routes/library.route';
-
+import attendanceRouter from './routes/attendance.route';
+import { errorHandler } from './utils/error.util';
 const app = express();
 
 app.use(cors({
@@ -76,8 +77,11 @@ app.use('/api/v1/mail', mailRouter);
 app.use('/api/v1/assignments', assignmentRouter);
 app.use('/api/v1/book', bookRouter);
 app.use('/api/v1/library', libraryRouter);
+app.use('/api/v1/attendance', attendanceRouter);
 app.get('/', (req, res) => {
-
   res.send('Hello, World222!');
 });
+
+app.use(errorHandler);
+
 export default app;

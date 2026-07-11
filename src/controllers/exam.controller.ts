@@ -160,3 +160,43 @@ export const deleteExamRoutineCell = async (req: AuthenticatedRequest, res: Resp
     return sendError(res, 'Internal Server Error', undefined, 500);
   }
 };
+
+export const getMyExams = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { studentId } = req.query;
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const role = req.role;
+    const userId = req.userId;
+    
+    if (!role || !userId) return sendError(res, 'User information not found', undefined, 400);
+
+    const exams = await ExamService.getMyExams(schoolId as string, role, userId, studentId as string | undefined);
+    return sendSuccess(res, 'Exams retrieved successfully', exams, 200);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
+export const getMyExamRoutine = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { examId, studentId } = req.query;
+    const schoolId = resolveSchoolId(req);
+    
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+    if (!examId) return sendError(res, 'examId is required', undefined, 400);
+
+    const role = req.role;
+    const userId = req.userId;
+
+    if (!role || !userId) return sendError(res, 'User information not found', undefined, 400);
+
+    const data = await ExamService.getMyExamRoutine(examId as string, schoolId as string, role, userId, studentId as string | undefined);
+    return sendSuccess(res, 'Exam routine retrieved successfully', data, 200);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
