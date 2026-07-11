@@ -20,6 +20,9 @@ async function main() {
   const { seedTeachers } = await import("./teacher.seeder");
   await seedTeachers();
 
+  const { seedBooks } = await import("./book.seeder");
+  await seedBooks();
+
   console.log("=== All seeders completed successfully ===");
 
   await closeDB();
