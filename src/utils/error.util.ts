@@ -1,4 +1,3 @@
-import app from "../app";
 import { NextFunction, Request, Response } from "express";
 export class ApiError extends Error {
     constructor(
@@ -10,7 +9,7 @@ export class ApiError extends Error {
         this.name="APIError";
     }
 }
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       success: false,
@@ -19,4 +18,4 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     });
   }
   res.status(500).json({ success: false, message: 'Internal Server Error' });
-});
+};
