@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { Teacher } from '../models/teacher.model';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { zodError } from '../utils/zod-error.util';
@@ -27,6 +28,7 @@ import {
   swapRoutineCellsService,
   updateBulkRoomService,
   updateRoutineCellService,
+  getTeacherRoutineService,
 } from '../services/routine.service';
 
 const getSchoolId = (req: AuthenticatedRequest) => resolveSchoolId(req);
@@ -309,3 +311,34 @@ export const deleteRoutine = async (req: AuthenticatedRequest, res: Response): P
     return sendError(res, error.message || 'Error deleting routine', undefined, error.statusCode || 500);
   }
 };
+
+export const getTeacherRoutine = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return sendError(res, 'School ID is required', undefined, 400);
+    }
+
+    let teacherId = singleString(req.params.teacherId);
+    if (!teacherId) {
+      return sendError(res, 'teacherId is required', undefined, 400);
+    }
+
+    if (teacherId === 'me') {
+      if (!req.userId) {
+        return sendError(res, 'Unauthorized', undefined, 401);
+      }
+      const teacherDoc = await Teacher.findOne({ userId: req.userId as any, schoolId }).lean();
+      if (!teacherDoc) {
+        return sendError(res, 'Teacher profile not found for this user', undefined, 404);
+      }
+      teacherId = teacherDoc._id.toString();
+    }
+
+    const data = await getTeacherRoutineService(schoolId, teacherId);
+    return sendSuccess(res, 'Teacher routine fetched successfully', data, 200);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Error fetching teacher routine', undefined, error.statusCode || 500);
+  }
+};
+

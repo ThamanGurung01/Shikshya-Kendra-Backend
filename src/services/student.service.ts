@@ -76,3 +76,13 @@ export const hardDeleteStudent=async(id:string)=>{
 export const hardDeleteStudentBySchool=async(id:string,schoolId:string)=>{
     return await Student.findOneAndDelete({_id:id,schoolId});
 }
+
+export const getStudentByUserId = async (userId: string) => {
+    return await Student.findOne({ userId })
+        .populate({
+            path: 'parentId',
+            populate: { path: 'userId', select: userSelect }
+        })
+        .populate('schoolId', schoolSelect)
+        .populate('userId', userSelect);
+}

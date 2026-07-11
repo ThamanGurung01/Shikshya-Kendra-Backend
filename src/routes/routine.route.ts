@@ -17,6 +17,7 @@ import {
   swapRoutineCells,
   updateBulkRoom,
   updateRoutineCell,
+  getTeacherRoutine,
 } from "../controllers/routine.controller";
 
 const routineRouter = Router();
@@ -77,8 +78,14 @@ routineRouter.delete(
 routineRouter.get(
   "/routine",
   authenticate,
-  authorize(routineRoles),
+  authorize([...routineRoles, Role.TEACHER, Role.STUDENT, Role.PARENT]),
   getRoutine,
+);
+routineRouter.get(
+  "/routine/teacher/:teacherId",
+  authenticate,
+  authorize([...routineRoles, Role.TEACHER]),
+  getTeacherRoutine,
 );
 routineRouter.post(
   "/routine/auto-generate",
