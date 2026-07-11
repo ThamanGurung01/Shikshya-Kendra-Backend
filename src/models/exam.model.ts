@@ -10,6 +10,9 @@ export interface IExam {
   allowedDays: string[];
   startTime: string;
   endTime: string;
+  actualEndDate?: Date;
+  note?: string;
+  classTimes?: { classId: Types.ObjectId; startTime: string; endTime: string }[];
   status: 'draft' | 'upcoming' | 'active' | 'ended';
 }
 
@@ -24,6 +27,15 @@ const examSchema = new Schema<IExam>(
     allowedDays: [{ type: String, required: true }],
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
+    actualEndDate: { type: Date },
+    note: { type: String },
+    classTimes: [
+      {
+        classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
+        startTime: { type: String, required: true },
+        endTime: { type: String, required: true },
+      },
+    ],
     status: {
       type: String,
       enum: ['draft', 'upcoming', 'active', 'ended'],
