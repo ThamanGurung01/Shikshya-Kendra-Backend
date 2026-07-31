@@ -1,5 +1,18 @@
 import { Schema, Types, model } from 'mongoose';
 
+export interface IExamSubjectConfig {
+  subjectId: Types.ObjectId;
+  theoryFullMarks: number;
+  theoryPassMarks: number;
+  practicalFullMarks: number;
+  practicalPassMarks: number;
+}
+
+export interface IExamClassConfig {
+  classId: Types.ObjectId;
+  subjects: IExamSubjectConfig[];
+}
+
 export interface IExam {
   schoolId: Types.ObjectId;
   academicYearId: Types.ObjectId;
@@ -14,6 +27,8 @@ export interface IExam {
   note?: string;
   classTimes?: { classId: Types.ObjectId; startTime: string; endTime: string }[];
   status: 'draft' | 'upcoming' | 'active' | 'ended';
+  gradingSystem?: 'gpa' | 'percentage';
+  examConfiguration?: IExamClassConfig[];
 }
 
 const examSchema = new Schema<IExam>(
@@ -42,6 +57,24 @@ const examSchema = new Schema<IExam>(
       default: 'draft',
       required: true,
     },
+    gradingSystem: {
+      type: String,
+      enum: ['gpa', 'percentage'],
+    },
+    examConfiguration: [
+      {
+        classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
+        subjects: [
+          {
+            subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
+            theoryFullMarks: { type: Number, default: 75 },
+            theoryPassMarks: { type: Number, default: 30 },
+            practicalFullMarks: { type: Number, default: 25 },
+            practicalPassMarks: { type: Number, default: 10 },
+          },
+        ],
+      },
+    ],
   },
   {
     timestamps: true,
