@@ -25,6 +25,8 @@ import assignmentRouter from './routes/assignment.route';
 import bookRouter from './routes/book.route';
 import libraryRouter from './routes/library.route';
 import attendanceRouter from './routes/attendance.route';
+import resultRouter from './routes/result.route';
+import gradeAssignmentRouter from './routes/grade-assignment.route';
 import { errorHandler } from './utils/error.util';
 const app = express();
 
@@ -78,6 +80,8 @@ app.use('/api/v1/assignments', assignmentRouter);
 app.use('/api/v1/book', bookRouter);
 app.use('/api/v1/library', libraryRouter);
 app.use('/api/v1/attendance', attendanceRouter);
+app.use('/api/v1/results', resultRouter);
+app.use('/api/v1/grade-assignments', gradeAssignmentRouter);
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
 });

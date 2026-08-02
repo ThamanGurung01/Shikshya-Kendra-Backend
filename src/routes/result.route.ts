@@ -1,0 +1,36 @@
+import { Router } from 'express';
+import { authenticate } from '../middlewares/auth.middleware';
+import { authorize } from '../middlewares/role.middleware';
+import Role from '../utils/role.util';
+import {
+  createResult,
+  getAllResults,
+  getResultById,
+  updateResultStatus,
+  deleteResult,
+  getResultGradeAssignments,
+  getResultHistory,
+  getStudentGradeHistory,
+  reopenGradeAssignment,
+  reassignGradeAssignmentTeacher,
+} from '../controllers/result.controller';
+
+const resultRouter = Router();
+
+// --- Result CRUD (Admin only) ---
+resultRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createResult);
+resultRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllResults);
+resultRouter.get('/history/student/:studentId', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentGradeHistory);
+resultRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultById);
+resultRouter.patch('/:id/status', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateResultStatus);
+resultRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), deleteResult);
+
+// --- Grade Assignments for a Result ---
+resultRouter.get('/:id/grade-assignments', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultGradeAssignments);
+resultRouter.post('/:id/grade-assignments/:gaId/reopen', authenticate, authorize([Role.OADMIN, Role.ADMIN]), reopenGradeAssignment);
+resultRouter.patch('/:id/grade-assignments/:gaId/reassign', authenticate, authorize([Role.OADMIN, Role.ADMIN]), reassignGradeAssignmentTeacher);
+
+// --- Grade History for a Result ---
+resultRouter.get('/:id/history', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultHistory);
+
+export default resultRouter;

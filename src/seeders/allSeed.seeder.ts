@@ -23,6 +23,9 @@ async function main() {
   const { seedBooks } = await import("./book.seeder");
   await seedBooks();
 
+  const { seedExams } = await import("./exam.seeder");
+  await seedExams();
+
   console.log("=== All seeders completed successfully ===");
 
   await closeDB();
