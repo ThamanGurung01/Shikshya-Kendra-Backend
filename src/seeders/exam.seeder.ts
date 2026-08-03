@@ -13,6 +13,7 @@ import { GradeAssignment } from "../models/grade-assignment.model";
 import { User } from "../models/user.model";
 import { ExamRoutineModel } from "../models/exam-routine.model";
 import { GradeHistory } from "../models/grade-history.model";
+import { SubjectTeacherMapping } from "../models/subject-teacher-mapping.model";
 
 export const seedExams = async () => {
   try {
@@ -48,14 +49,28 @@ export const seedExams = async () => {
       return;
     }
 
-    const teacher = await Teacher.findOne({ schoolId: school._id });
-    if (!teacher) {
-      console.log("No teacher found.");
+    // Load all teachers into a map for O(1) lookup by ID
+    const allTeachers = await Teacher.find({ schoolId: school._id }).lean();
+    if (allTeachers.length === 0) {
+      console.log("No teachers found. Please run teacher seeder first.");
       return;
     }
+    const teacherMap = new Map<string, any>(allTeachers.map(t => [t._id.toString(), t]));
+    const fallbackTeacher = allTeachers[0]!;
+
+    // Load all subject-teacher mappings into a composite-key map:
+    //   key = `${classId}|${sectionId}|${subjectId}` → teacherId
+    // This avoids hundreds of individual DB queries inside the nested loops.
+    const allMappings = await SubjectTeacherMapping.find({ schoolId: school._id }).lean();
+    const mappingTeacherMap = new Map<string, string>();
+    for (const m of allMappings) {
+      const key = `${m.classId}|${m.sectionId}|${m.subjectId}`;
+      mappingTeacherMap.set(key, m.teacherId.toString());
+    }
+    console.log(`Loaded ${allMappings.length} subject-teacher mappings for grade assignment.`);
 
     const adminUser = await User.findOne({ email: "admin@shikshyakendra.edu.np" });
-    const createdByUserId = adminUser ? adminUser._id : teacher.userId;
+    const createdByUserId = adminUser ? adminUser._id : fallbackTeacher.userId;
 
     console.log("Creating Exam...");
     const examConfiguration = classes.map(c => ({
@@ -142,7 +157,14 @@ export const seedExams = async () => {
         const classConfig = examConfiguration.find(ec => ec.classId.toString() === cls._id.toString());
         if (!classConfig) continue;
 
+        let skippedNoMapping = 0;
         for (const subConfig of classConfig.subjects) {
+          // Resolve the teacher via in-memory map (keyed by classId|sectionId|subjectId)
+          const mappingKey = `${cls._id}|${section._id}|${subConfig.subjectId}`;
+          const mappedTeacherId = mappingTeacherMap.get(mappingKey);
+          if (!mappedTeacherId) skippedNoMapping++;
+          const assignmentTeacherId = mappedTeacherId ?? fallbackTeacher._id.toString();
+
           const entries = enrollments.map(enroll => {
             const theoryMarks = Math.floor(Math.random() * (75 - 30 + 1)) + 30; // 30 to 75
             const practicalMarks = Math.floor(Math.random() * (25 - 10 + 1)) + 10; // 10 to 25
@@ -162,7 +184,7 @@ export const seedExams = async () => {
               schoolId: school._id,
               resultId: result._id,
               examId: exam._id,
-              teacherId: teacher._id,
+              teacherId: assignmentTeacherId,
               classId: cls._id,
               sectionId: section._id,
               subjectId: subConfig.subjectId,
@@ -182,7 +204,7 @@ export const seedExams = async () => {
                 classId: cls._id,
                 sectionId: section._id,
                 subjectId: subConfig.subjectId,
-                teacherId: teacher._id,
+                teacherId: assignmentTeacherId,
                 theoryMarks: entry.theoryMarks,
                 practicalMarks: entry.practicalMarks,
                 totalMarks: entry.totalMarks,
@@ -198,7 +220,10 @@ export const seedExams = async () => {
         }
       }
     }
-    
+
+    if (allMappings.length === 0) {
+      console.warn("  ⚠  No SubjectTeacherMappings found — all grade assignments used fallback teacher. Run teacher seeder first for accurate mappings.");
+    }
     console.log("Grade assignments and histories created successfully.");
   } catch (error) {
     console.error("Error in exam seeder:", error);
