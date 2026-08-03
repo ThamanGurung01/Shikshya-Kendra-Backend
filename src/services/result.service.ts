@@ -6,6 +6,8 @@ import { AcademicYear } from '../models/academic-year.model';
 import SubjectTeacherMapping from '../models/subject-teacher-mapping.model';
 import { StudentEnrollment } from '../models/student-enrollment.model';
 import { ICreateResultInput } from '../validators/result.validator';
+import { Student } from '../models/student.model';
+import { Parent } from '../models/parent.model';
 
 export const createResult = async (data: ICreateResultInput, createdBy: string) => {
   // 1. Get active academic year
@@ -162,3 +164,154 @@ export const getResultGradeAssignments = async (resultId: string, schoolId: stri
     .select('-entries')
     .lean();
 };
+
+export const getMyResults = async (
+  schoolId: string,
+  role: string,
+  userId: string,
+  studentId?: string,
+) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year found');
+
+  let classId: string | null = null;
+  let targetStudentId: string | null = null;
+
+  if (role === 'student') {
+    const student = await Student.findOne({ userId, schoolId }).lean();
+    if (!student) throw new Error('Student not found');
+    targetStudentId = String(student._id);
+    const enrollment = await StudentEnrollment.findOne({
+      studentId: student._id,
+      academicYearId: activeYear._id,
+    }).lean();
+    if (!enrollment) throw new Error('No active enrollment found for student');
+    classId = String(enrollment.classId);
+  } else if (role === 'parent') {
+    const parent = await Parent.findOne({ userId }).lean();
+    if (!parent) throw new Error('Parent not found');
+    
+    if (!studentId) {
+      return [];
+    }
+
+    const student = await Student.findOne({ _id: studentId, parentId: parent._id, schoolId }).lean();
+    if (!student) throw new Error('Student not found or not associated with this parent');
+    targetStudentId = String(student._id);
+
+    const enrollment = await StudentEnrollment.findOne({
+      studentId: student._id,
+      academicYearId: activeYear._id,
+    }).lean();
+    if (!enrollment) throw new Error('No active enrollment found for student');
+    classId = String(enrollment.classId);
+  }
+
+  if (!classId) return [];
+
+  // Get all published results that contain the student's class
+  const results = await ResultModel.find({
+    schoolId,
+    academicYearId: activeYear._id,
+    status: 'published',
+    classIds: new Types.ObjectId(classId),
+  })
+    .populate('examId', 'name startDate endDate gradingSystem')
+    .populate('classIds', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return results.map(r => ({
+    ...r,
+    studentId: targetStudentId,
+  }));
+};
+
+import * as GradeHistoryService from './grade-history.service';
+
+export const getMyResultDetails = async (
+  resultId: string,
+  schoolId: string,
+  role: string,
+  userId: string,
+  studentId?: string,
+) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year found');
+
+  // Verify that the result is published and exists in the school
+  const result = await ResultModel.findOne({ _id: resultId, schoolId, status: 'published' })
+    .populate('examId', 'name startDate endDate gradingSystem examConfiguration')
+    .populate('classIds', 'name')
+    .lean();
+  if (!result) throw new Error('Result not found or not published');
+
+  let targetStudentId: string | null = null;
+  let targetEnrollment: any = null;
+
+  if (role === 'student') {
+    const student = await Student.findOne({ userId, schoolId }).lean();
+    if (!student) throw new Error('Student not found');
+    targetStudentId = String(student._id);
+    targetEnrollment = await StudentEnrollment.findOne({
+      studentId: student._id,
+      academicYearId: activeYear._id,
+    })
+      .populate('classId', 'name')
+      .populate('sectionId', 'name')
+      .lean();
+  } else if (role === 'parent') {
+    const parent = await Parent.findOne({ userId }).lean();
+    if (!parent) throw new Error('Parent not found');
+
+    if (!studentId) {
+      throw new Error('Student ID is required for parent role');
+    }
+
+    const student = await Student.findOne({ _id: studentId, parentId: parent._id, schoolId }).lean();
+    if (!student) throw new Error('Student not found or not associated with this parent');
+    targetStudentId = String(student._id);
+
+    targetEnrollment = await StudentEnrollment.findOne({
+      studentId: student._id,
+      academicYearId: activeYear._id,
+    })
+      .populate('classId', 'name')
+      .populate('sectionId', 'name')
+      .lean();
+  }
+
+  if (!targetStudentId || !targetEnrollment) throw new Error('Student enrollment details not found');
+
+  // Make sure the result includes the student's class
+  const studentClassId = String(targetEnrollment.classId?._id || targetEnrollment.classId);
+  const classInResult = result.classIds.some(
+    (c: any) => String(c._id || c) === studentClassId
+  );
+  if (!classInResult) throw new Error('Access denied: Student class not included in this result');
+
+  // Get grade history for this student & result
+  const grades = await GradeHistoryService.getStudentHistory(targetStudentId, schoolId, { resultId });
+
+  // Get the student basic details too
+  const studentDetails = await Student.findById(targetStudentId)
+    .populate('userId', 'name profileImage')
+    .lean();
+
+  return {
+    result,
+    student: {
+      _id: targetStudentId,
+      studentName: studentDetails?.studentName || '',
+      admissionNumber: studentDetails?.admissionNumber || '',
+      rollNumber: targetEnrollment.rollNumber || null,
+      className: targetEnrollment.classId?.name || '',
+      sectionName: targetEnrollment.sectionId?.name || '',
+      classId: targetEnrollment.classId?._id?.toString() || String(targetEnrollment.classId),
+      sectionId: targetEnrollment.sectionId?._id?.toString() || String(targetEnrollment.sectionId),
+      photo: (studentDetails as any)?.userId?.profileImage || null,
+    },
+    grades,
+  };
+};
+

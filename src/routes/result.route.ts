@@ -13,6 +13,8 @@ import {
   getStudentGradeHistory,
   reopenGradeAssignment,
   reassignGradeAssignmentTeacher,
+  getMyResults,
+  getMyResultDetails,
 } from '../controllers/result.controller';
 
 const resultRouter = Router();
@@ -21,6 +23,10 @@ const resultRouter = Router();
 resultRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createResult);
 resultRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllResults);
 resultRouter.get('/history/student/:studentId', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentGradeHistory);
+// --- Student/Parent Result Views ---
+resultRouter.get('/my-results', authenticate, authorize([Role.STUDENT, Role.PARENT]), getMyResults);
+resultRouter.get('/my-results/:resultId', authenticate, authorize([Role.STUDENT, Role.PARENT]), getMyResultDetails);
+
 resultRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultById);
 resultRouter.patch('/:id/status', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateResultStatus);
 resultRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), deleteResult);

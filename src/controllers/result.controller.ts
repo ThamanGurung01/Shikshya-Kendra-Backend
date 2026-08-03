@@ -161,3 +161,55 @@ export const reassignGradeAssignmentTeacher = async (req: AuthenticatedRequest, 
     return sendError(res, error.message || 'Internal Server Error', undefined, 500);
   }
 };
+
+export const getMyResults = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const role = req.role;
+    const userId = req.userId;
+    const { studentId } = req.query;
+
+    if (!role || !userId) return sendError(res, 'User information not found', undefined, 400);
+
+    const results = await ResultService.getMyResults(
+      schoolId as string,
+      role!,
+      userId!,
+      studentId as string | undefined
+    );
+    return sendSuccess(res, 'Results retrieved successfully', results);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
+export const getMyResultDetails = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const role = req.role;
+    const userId = req.userId;
+    const resultId = req.params.resultId;
+    const { studentId } = req.query;
+
+    if (!role || !userId) return sendError(res, 'User information not found', undefined, 400);
+    if (!resultId) return sendError(res, 'Result ID is required', undefined, 400);
+
+    const details = await ResultService.getMyResultDetails(
+      resultId as string,
+      schoolId as string,
+      role!,
+      userId!,
+      studentId as string | undefined
+    );
+    return sendSuccess(res, 'Result details retrieved successfully', details);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
