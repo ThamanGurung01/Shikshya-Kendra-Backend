@@ -1,5 +1,13 @@
 import { Schema, Types, model, Document } from 'mongoose';
 
+export interface IWlmScore {
+  studentId: Types.ObjectId;
+  examScore: number;
+  attendanceScore: number;
+  assignmentScore: number;
+  comprehensiveScore: number;
+}
+
 export interface IResult extends Document {
   schoolId: Types.ObjectId;
   academicYearId: Types.ObjectId;
@@ -9,6 +17,7 @@ export interface IResult extends Document {
   status: 'processing' | 'draft' | 'published';
   publishedAt?: Date;
   createdBy: Types.ObjectId;
+  wlmScores?: IWlmScore[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +37,13 @@ const resultSchema = new Schema<IResult>(
     },
     publishedAt: { type: Date, default: null },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    wlmScores: [{
+      studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
+      examScore: { type: Number, required: true },
+      attendanceScore: { type: Number, required: true },
+      assignmentScore: { type: Number, required: true },
+      comprehensiveScore: { type: Number, required: true },
+    }],
   },
   { timestamps: true },
 );

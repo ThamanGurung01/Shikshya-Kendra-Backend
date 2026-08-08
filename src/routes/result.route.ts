@@ -15,7 +15,10 @@ import {
   reassignGradeAssignmentTeacher,
   getMyResults,
   getMyResultDetails,
+  getStudentResultsForAdmin,
+  getStudentResultDetailsForAdmin,
 } from '../controllers/result.controller';
+import { getWlmScores, recalculateWlm } from '../controllers/wlm.controller';
 
 const resultRouter = Router();
 
@@ -26,6 +29,11 @@ resultRouter.get('/history/student/:studentId', authenticate, authorize([Role.OA
 // --- Student/Parent Result Views ---
 resultRouter.get('/my-results', authenticate, authorize([Role.STUDENT, Role.PARENT]), getMyResults);
 resultRouter.get('/my-results/:resultId', authenticate, authorize([Role.STUDENT, Role.PARENT]), getMyResultDetails);
+
+// --- Admin-specific Student Result Views ---
+resultRouter.get('/admin/student/:studentId/results', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentResultsForAdmin);
+resultRouter.get('/admin/student/:studentId/results/:resultId', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentResultDetailsForAdmin);
+
 
 resultRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultById);
 resultRouter.patch('/:id/status', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateResultStatus);
@@ -39,4 +47,9 @@ resultRouter.patch('/:id/grade-assignments/:gaId/reassign', authenticate, author
 // --- Grade History for a Result ---
 resultRouter.get('/:id/history', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultHistory);
 
+// --- WLM Scores for a Result ---
+resultRouter.get('/:id/wlm-scores', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getWlmScores);
+resultRouter.post('/:id/recalculate-wlm', authenticate, authorize([Role.OADMIN, Role.ADMIN]), recalculateWlm);
+
 export default resultRouter;
+

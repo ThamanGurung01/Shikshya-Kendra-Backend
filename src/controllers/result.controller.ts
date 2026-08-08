@@ -213,3 +213,39 @@ export const getMyResultDetails = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
+export const getStudentResultsForAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const studentId = req.params.studentId as string;
+    if (!studentId) return sendError(res, 'Student ID is required', undefined, 400);
+
+    const results = await ResultService.getStudentResultsForAdmin(schoolId, studentId);
+    return sendSuccess(res, 'Results retrieved successfully', results);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
+export const getStudentResultDetailsForAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const studentId = req.params.studentId as string;
+    const resultId = req.params.resultId as string;
+    if (!studentId || !resultId) {
+      return sendError(res, 'Student ID and Result ID are required', undefined, 400);
+    }
+
+    const details = await ResultService.getStudentResultDetailsForAdmin(resultId, schoolId, studentId);
+    return sendSuccess(res, 'Result details retrieved successfully', details);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
+

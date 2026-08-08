@@ -225,6 +225,27 @@ export const seedExams = async () => {
       console.warn("  ⚠  No SubjectTeacherMappings found — all grade assignments used fallback teacher. Run teacher seeder first for accurate mappings.");
     }
     console.log("Grade assignments and histories created successfully.");
+
+    console.log("Calculating WLM scores for seeded result...");
+    const { calculateWlmScores } = await import("../services/wlm.service");
+    const allWlmScores: any[] = [];
+    for (const cls of classes) {
+      const classSections = await Section.find({ classId: cls._id });
+      for (const section of classSections) {
+        const scores = await calculateWlmScores(
+          result._id.toString(),
+          school._id.toString(),
+          academicYear._id.toString(),
+          cls._id.toString(),
+          section._id.toString(),
+          examEndDate,
+        );
+        allWlmScores.push(...scores);
+      }
+    }
+    result.wlmScores = allWlmScores;
+    await result.save();
+    console.log(`Calculated and stored WLM scores for ${allWlmScores.length} students in the seeded result.`);
   } catch (error) {
     console.error("Error in exam seeder:", error);
   }

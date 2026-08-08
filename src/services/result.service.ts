@@ -8,6 +8,7 @@ import { StudentEnrollment } from '../models/student-enrollment.model';
 import { ICreateResultInput } from '../validators/result.validator';
 import { Student } from '../models/student.model';
 import { Parent } from '../models/parent.model';
+import { calculateWlmScores, IWlmBreakdown } from './wlm.service';
 
 export const createResult = async (data: ICreateResultInput, createdBy: string) => {
   // 1. Get active academic year
@@ -114,6 +115,7 @@ export const getResultById = async (id: string, schoolId: string) => {
   const result = await ResultModel.findOne({ _id: id, schoolId })
     .populate('examId', 'name startDate endDate status gradingSystem examConfiguration')
     .populate('classIds', 'name')
+    .populate('wlmScores.studentId', 'studentName admissionNumber')
     .lean();
   if (!result) return null;
 
@@ -138,7 +140,31 @@ export const updateResultStatus = async (id: string, schoolId: string, status: s
   }
 
   const updateData: any = { status };
-  if (status === 'published') updateData.publishedAt = new Date();
+
+  if (status === 'published') {
+    // Calculate WLM scores for all class+section combos
+    const exam = await ExamModel.findById(result.examId).lean();
+    const allWlmScores: IWlmBreakdown[] = [];
+
+    for (const classId of result.classIds) {
+      const sectionIds = await GradeAssignment.distinct('sectionId', { resultId: id, classId });
+      for (const sectionId of sectionIds) {
+        const scores = await calculateWlmScores(
+          id, schoolId, String(result.academicYearId),
+          String(classId), String(sectionId), exam!.endDate,
+        );
+        allWlmScores.push(...scores);
+      }
+    }
+
+    updateData.wlmScores = allWlmScores;
+    updateData.publishedAt = new Date();
+  }
+
+  // Clear WLM scores when re-opening a published result
+  if (result.status === 'published' && status !== 'published') {
+    updateData.wlmScores = [];
+  }
 
   return await ResultModel.findOneAndUpdate({ _id: id, schoolId }, updateData, { returnDocument: 'after' })
     .populate('examId', 'name startDate endDate status')
@@ -312,6 +338,132 @@ export const getMyResultDetails = async (
       photo: (studentDetails as any)?.userId?.profileImage || null,
     },
     grades,
+    // WLM data for Performance Overview (radar chart + comparison bars)
+    wlm: getWlmDataForStudent(result, targetStudentId),
+  };
+};
+
+/**
+ * Extract WLM data for a single student from the result's stored snapshot.
+ * Computes class averages from all stored scores (zero extra DB queries).
+ */
+function getWlmDataForStudent(result: any, studentId: string) {
+  if (!result.wlmScores || result.wlmScores.length === 0) return null;
+
+  const studentWlm = result.wlmScores.find(
+    (s: any) => String(s.studentId) === studentId
+  );
+  if (!studentWlm) return null;
+
+  // Compute class averages from the stored snapshot
+  const scores = result.wlmScores;
+  const avg = (arr: number[]) => arr.length > 0
+    ? Math.round(arr.reduce((a: number, b: number) => a + b, 0) / arr.length * 100) / 100
+    : 0;
+
+  const classAverage = {
+    examScore: avg(scores.map((s: any) => s.examScore)),
+    attendanceScore: avg(scores.map((s: any) => s.attendanceScore)),
+    assignmentScore: avg(scores.map((s: any) => s.assignmentScore)),
+    comprehensiveScore: avg(scores.map((s: any) => s.comprehensiveScore)),
+  };
+
+  return {
+    student: {
+      examScore: studentWlm.examScore,
+      attendanceScore: studentWlm.attendanceScore,
+      assignmentScore: studentWlm.assignmentScore,
+      comprehensiveScore: studentWlm.comprehensiveScore,
+    },
+    classAverage,
+  };
+}
+
+export const getStudentResultsForAdmin = async (schoolId: string, studentId: string) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year found');
+
+  const student = await Student.findOne({ _id: studentId, schoolId }).lean();
+  if (!student) throw new Error('Student not found');
+
+  const enrollment = await StudentEnrollment.findOne({
+    studentId: student._id,
+    academicYearId: activeYear._id,
+  }).lean();
+  if (!enrollment) throw new Error('No active enrollment found for student');
+  const classId = String(enrollment.classId);
+
+  // Get all published results that contain the student's class
+  const results = await ResultModel.find({
+    schoolId,
+    academicYearId: activeYear._id,
+    status: 'published',
+    classIds: new Types.ObjectId(classId),
+  })
+    .populate('examId', 'name startDate endDate gradingSystem')
+    .populate('classIds', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return results.map(r => ({
+    ...r,
+    studentId: String(student._id),
+  }));
+};
+
+export const getStudentResultDetailsForAdmin = async (
+  resultId: string,
+  schoolId: string,
+  studentId: string,
+) => {
+  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+  if (!activeYear) throw new Error('No active academic year found');
+
+  const result = await ResultModel.findOne({ _id: resultId, schoolId, status: 'published' })
+    .populate('examId', 'name startDate endDate gradingSystem examConfiguration')
+    .populate('classIds', 'name')
+    .lean();
+  if (!result) throw new Error('Result not found or not published');
+
+  const student = await Student.findOne({ _id: studentId, schoolId }).lean();
+  if (!student) throw new Error('Student not found');
+
+  const targetEnrollment = await StudentEnrollment.findOne({
+    studentId: student._id,
+    academicYearId: activeYear._id,
+  })
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .lean();
+  if (!targetEnrollment) throw new Error('Student enrollment details not found');
+
+  const studentClassId = String(targetEnrollment.classId?._id || targetEnrollment.classId);
+  const classInResult = result.classIds.some(
+    (c: any) => String(c._id || c) === studentClassId
+  );
+  if (!classInResult) throw new Error('Access denied: Student class not included in this result');
+
+  const grades = await GradeHistoryService.getStudentHistory(String(student._id), schoolId, { resultId });
+
+  const studentDetails = await Student.findById(student._id)
+    .populate('userId', 'name profileImage')
+    .lean();
+
+  return {
+    result,
+    student: {
+      _id: String(student._id),
+      studentName: studentDetails?.studentName || '',
+      admissionNumber: studentDetails?.admissionNumber || '',
+      rollNumber: targetEnrollment.rollNumber || null,
+      className: (targetEnrollment.classId as any)?.name || '',
+      sectionName: (targetEnrollment.sectionId as any)?.name || '',
+      classId: (targetEnrollment.classId as any)?._id?.toString() || String(targetEnrollment.classId),
+      sectionId: (targetEnrollment.sectionId as any)?._id?.toString() || String(targetEnrollment.sectionId),
+      photo: (studentDetails as any)?.userId?.profileImage || null,
+    },
+    grades,
+    wlm: getWlmDataForStudent(result, String(student._id)),
   };
 };
 
