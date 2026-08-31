@@ -479,8 +479,8 @@ import {
 const teacherRouter = Router();
 
 teacherRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createTeacher);
-teacherRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllTeachers);
-teacherRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getTeacherById);
+teacherRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getAllTeachers);
+teacherRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getTeacherById);
 teacherRouter.put('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateTeacher);
 teacherRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), hardDeleteTeacher);
 

@@ -451,8 +451,8 @@ import {
 const accountantRouter = Router();
 
 accountantRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createAccountant);
-accountantRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllAccountants);
-accountantRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAccountantById);
+accountantRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getAllAccountants);
+accountantRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getAccountantById);
 accountantRouter.put('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateAccountant);
 accountantRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), hardDeleteAccountant);
 
