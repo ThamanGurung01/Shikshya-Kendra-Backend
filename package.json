@@ -12,7 +12,8 @@
     "seed:superadmin": "tsx src/seeders/superadmin.seeder.ts",
     "seed:school": "tsx src/seeders/school.seeder.ts",
     "seed:teacher": "tsx src/seeders/teacher.seeder.ts",
-    "seed:book": "tsx src/seeders/book.seeder.ts"
+    "seed:book": "tsx src/seeders/book.seeder.ts",
+    "seed:account": "tsx src/seeders/account.seeder.ts"
   },
   "repository": {
     "type": "git",

@@ -14,13 +14,13 @@ export const createTeacher = async (
 
 export const getAllTeachersBySchool = async (schoolId: string) => {
   return await Teacher.find({ schoolId })
-    .populate('userId', 'name email profileImage role is_active -_id')
+    .populate('userId', 'name email profileImage role is_active')
     .sort({ createdAt: -1 });
 };
 
 export const getTeacherById = async (id: string) => {
   return await Teacher.findById(id)
-    .populate('userId', 'name email profileImage role is_active -_id');
+    .populate('userId', 'name email profileImage role is_active');
 };
 
 export const updateTeacherBySchool = async (id: string, schoolId: string, data: Partial<ITeacherInput>) => {

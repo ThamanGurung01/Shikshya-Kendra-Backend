@@ -451,8 +451,8 @@ import {
 const librarianRouter = Router();
 
 librarianRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createLibrarian);
-librarianRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getAllLibrarians);
-librarianRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getLibrarianById);
+librarianRouter.get('/', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getAllLibrarians);
+librarianRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.ACCOUNTANT]), getLibrarianById);
 librarianRouter.put('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), updateLibrarian);
 librarianRouter.delete('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), hardDeleteLibrarian);
 
