@@ -33,6 +33,7 @@ import incomeRouter from './routes/income.route';
 import expenseRouter from './routes/expense.route';
 import payrollRouter from './routes/payroll.route';
 import accountantDashboardRouter from './routes/accountant-dashboard.route';
+import superadminRouter from './routes/superadmin.route';
 import { errorHandler } from './utils/error.util';
 const app = express();
 
@@ -96,6 +97,7 @@ app.use('/api/v1/incomes', incomeRouter);
 app.use('/api/v1/expenses', expenseRouter);
 app.use('/api/v1/payrolls', payrollRouter);
 app.use('/api/v1/accountant-dashboard', accountantDashboardRouter);
+app.use('/api/v1/superadmin', superadminRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
