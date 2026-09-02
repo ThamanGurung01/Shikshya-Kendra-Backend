@@ -8,6 +8,8 @@ import { StudentEnrollment } from '../models/student-enrollment.model';
 
 export interface IWlmBreakdown {
   studentId: string;
+  classId?: string;
+  sectionId?: string;
   examScore: number;
   attendanceScore: number;
   assignmentScore: number;
@@ -206,6 +208,8 @@ export async function calculateWlmScores(
 
     results.push({
       studentId: sid,
+      classId,
+      sectionId,
       examScore,
       attendanceScore,
       assignmentScore,

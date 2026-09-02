@@ -2,6 +2,8 @@ import { Schema, Types, model, Document } from 'mongoose';
 
 export interface IWlmScore {
   studentId: Types.ObjectId;
+  classId?: Types.ObjectId;
+  sectionId?: Types.ObjectId;
   examScore: number;
   attendanceScore: number;
   assignmentScore: number;
@@ -39,6 +41,8 @@ const resultSchema = new Schema<IResult>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     wlmScores: [{
       studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
+      classId: { type: Schema.Types.ObjectId, ref: 'Class' },
+      sectionId: { type: Schema.Types.ObjectId, ref: 'Section' },
       examScore: { type: Number, required: true },
       attendanceScore: { type: Number, required: true },
       assignmentScore: { type: Number, required: true },

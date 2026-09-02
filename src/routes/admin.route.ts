@@ -8,6 +8,7 @@ import {
   getAdminById,
   updateAdmin,
   hardDeleteAdmin,
+  resetUserPassword,
 } from '../controllers/admin.controller';
 
 /**
@@ -450,6 +451,7 @@ import {
  */
 const adminRouter = Router();
 
+adminRouter.post('/reset-user-password', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.SUPERADMIN]), resetUserPassword);
 adminRouter.post('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), createAdmin);
 adminRouter.get('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAllAdmins);
 adminRouter.get('/:id', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAdminById);

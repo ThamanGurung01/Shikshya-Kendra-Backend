@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import { Student } from "../models/student.model";
 import { IStudentInput } from "../validators/student.validator";
 
-const userSelect = 'name email profileImage role is_active -_id';
+const userSelect = 'name email profileImage role is_active';
 const schoolSelect = 'school_name logo address contact city -_id';
 
 //create
