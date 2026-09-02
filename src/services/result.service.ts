@@ -8,6 +8,7 @@ import { StudentEnrollment } from '../models/student-enrollment.model';
 import { ICreateResultInput } from '../validators/result.validator';
 import { Student } from '../models/student.model';
 import { Parent } from '../models/parent.model';
+import { School } from '../models/school.model';
 import { calculateWlmScores, IWlmBreakdown } from './wlm.service';
 
 export const createResult = async (data: ICreateResultInput, createdBy: string) => {
@@ -107,6 +108,7 @@ export const getAllResults = async (schoolId: string) => {
   return await ResultModel.find({ schoolId })
     .populate('examId', 'name startDate endDate status gradingSystem')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .sort({ createdAt: -1 })
     .lean();
 };
@@ -115,7 +117,10 @@ export const getResultById = async (id: string, schoolId: string) => {
   const result = await ResultModel.findOne({ _id: id, schoolId })
     .populate('examId', 'name startDate endDate status gradingSystem examConfiguration')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .populate('wlmScores.studentId', 'studentName admissionNumber')
+    .populate('wlmScores.classId', 'name')
+    .populate('wlmScores.sectionId', 'name')
     .lean();
   if (!result) return null;
 
@@ -244,6 +249,7 @@ export const getMyResults = async (
   })
     .populate('examId', 'name startDate endDate gradingSystem')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -265,10 +271,13 @@ export const getMyResultDetails = async (
   const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
   if (!activeYear) throw new Error('No active academic year found');
 
+  const schoolDetails = await School.findById(schoolId).select('school_name address contact school_email logo').lean();
+
   // Verify that the result is published and exists in the school
   const result = await ResultModel.findOne({ _id: resultId, schoolId, status: 'published' })
     .populate('examId', 'name startDate endDate gradingSystem examConfiguration')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .lean();
   if (!result) throw new Error('Result not found or not published');
 
@@ -326,6 +335,13 @@ export const getMyResultDetails = async (
 
   return {
     result,
+    school: schoolDetails ? {
+      _id: String(schoolDetails._id),
+      school_name: schoolDetails.school_name,
+      address: schoolDetails.address,
+      contact: schoolDetails.contact,
+      logo: schoolDetails.logo,
+    } : null,
     student: {
       _id: targetStudentId,
       studentName: studentDetails?.studentName || '',
@@ -402,6 +418,7 @@ export const getStudentResultsForAdmin = async (schoolId: string, studentId: str
   })
     .populate('examId', 'name startDate endDate gradingSystem')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -419,9 +436,12 @@ export const getStudentResultDetailsForAdmin = async (
   const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
   if (!activeYear) throw new Error('No active academic year found');
 
+  const schoolDetails = await School.findById(schoolId).select('school_name address contact school_email logo').lean();
+
   const result = await ResultModel.findOne({ _id: resultId, schoolId, status: 'published' })
     .populate('examId', 'name startDate endDate gradingSystem examConfiguration')
     .populate('classIds', 'name')
+    .populate('schoolId', 'school_name address contact logo')
     .lean();
   if (!result) throw new Error('Result not found or not published');
 
@@ -451,6 +471,13 @@ export const getStudentResultDetailsForAdmin = async (
 
   return {
     result,
+    school: schoolDetails ? {
+      _id: String(schoolDetails._id),
+      school_name: schoolDetails.school_name,
+      address: schoolDetails.address,
+      contact: schoolDetails.contact,
+      logo: schoolDetails.logo,
+    } : null,
     student: {
       _id: String(student._id),
       studentName: studentDetails?.studentName || '',

@@ -8,6 +8,8 @@ import { zodError } from '../utils/zod-error.util';
 import { adminCreate, adminUpdate } from '../validators/admin.validator';
 import { IUserInput } from '../validators/user.validator';
 import { hashPassword } from '../utils/hash.util';
+import { User } from '../models/user.model';
+import Role from '../utils/role.util';
 import { sendError, sendSuccess } from '../utils/response.util';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { resolveSchoolId } from '../utils/resolve-school-id.util';
@@ -222,3 +224,58 @@ export const hardDeleteAdmin = async (req: AuthenticatedRequest, res: Response) 
     sendError(res, 'Internal Server Error', undefined, 500);
   }
 };
+
+export const resetUserPassword = async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+  try {
+    const { targetUserId, newPassword } = req.body;
+
+    if (!targetUserId || !Types.ObjectId.isValid(targetUserId)) {
+      return sendError(res, 'Invalid or missing user ID', undefined, 400);
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+      return sendError(res, 'Password must be at least 6 characters long', undefined, 400);
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return sendError(res, 'Target user not found', undefined, 404);
+    }
+
+    // 1. Superadmin password cannot be reset via admin route.
+    if (targetUser.role === Role.SUPERADMIN) {
+      return sendError(res, 'Password reset is not allowed for superadmin.', undefined, 403);
+    }
+
+    // 2. If target is School Owner (OADMIN): ONLY Superadmin can reset password.
+    if (targetUser.role === Role.OADMIN) {
+      if (req.role !== Role.SUPERADMIN) {
+        return sendError(res, 'Only Superadmin can reset password for School Owner (OAdmin).', undefined, 403);
+      }
+    }
+
+    // 3. If target is Academic Admin (ADMIN): ONLY School Owner (OADMIN) or Superadmin can reset password.
+    if (targetUser.role === Role.ADMIN) {
+      if (req.role !== Role.OADMIN && req.role !== Role.SUPERADMIN) {
+        return sendError(res, 'Only the School Owner (OAdmin) can reset password for other administrators.', undefined, 403);
+      }
+    }
+
+    // Hash new password & clear refresh token
+    const hashedPassword = await hashPassword(newPassword.trim());
+    targetUser.password = hashedPassword;
+    targetUser.refresh_token = '';
+    await targetUser.save();
+
+    return sendSuccess(res, `Password reset successfully for ${targetUser.name}`, {
+      _id: targetUser._id,
+      name: targetUser.name,
+      email: targetUser.email,
+      role: targetUser.role,
+    });
+  } catch (error: any) {
+    console.error('Error resetting user password:', error);
+    return sendError(res, 'Internal Server Error', undefined, 500);
+  }
+};
+

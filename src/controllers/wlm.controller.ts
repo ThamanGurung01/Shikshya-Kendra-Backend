@@ -52,6 +52,8 @@ export const getWlmScores = async (req: AuthenticatedRequest, res: Response) => 
     const resultId = req.params.id as string;
     const result = await ResultModel.findOne({ _id: resultId, schoolId, status: 'published' })
       .populate('wlmScores.studentId', 'studentName admissionNumber')
+      .populate('wlmScores.classId', 'name')
+      .populate('wlmScores.sectionId', 'name')
       .lean();
     if (!result) return sendError(res, 'Published result not found', undefined, 404);
 
@@ -95,6 +97,8 @@ export const recalculateWlm = async (req: AuthenticatedRequest, res: Response) =
       .populate('examId', 'name startDate endDate status')
       .populate('classIds', 'name')
       .populate('wlmScores.studentId', 'studentName admissionNumber')
+      .populate('wlmScores.classId', 'name')
+      .populate('wlmScores.sectionId', 'name')
       .lean();
 
     return sendSuccess(res, 'WLM scores recalculated successfully', updated?.wlmScores || []);
