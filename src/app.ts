@@ -25,6 +25,15 @@ import assignmentRouter from './routes/assignment.route';
 import bookRouter from './routes/book.route';
 import libraryRouter from './routes/library.route';
 import attendanceRouter from './routes/attendance.route';
+import feeStructureRouter from './routes/fee-structure.route';
+import studentFeeConfigRouter from './routes/student-fee-config.route';
+import feeHeadRouter from './routes/fee-head.route';
+import feeInvoiceRouter from './routes/fee-invoice.route';
+import incomeRouter from './routes/income.route';
+import expenseRouter from './routes/expense.route';
+import payrollRouter from './routes/payroll.route';
+import accountantDashboardRouter from './routes/accountant-dashboard.route';
+import superadminRouter from './routes/superadmin.route';
 import resultRouter from './routes/result.route';
 import gradeAssignmentRouter from './routes/grade-assignment.route';
 import wlmConfigRouter from './routes/wlm-config.route';
@@ -81,13 +90,26 @@ app.use('/api/v1/assignments', assignmentRouter);
 app.use('/api/v1/book', bookRouter);
 app.use('/api/v1/library', libraryRouter);
 app.use('/api/v1/attendance', attendanceRouter);
+
 app.use('/api/v1/results', resultRouter);
 app.use('/api/v1/grade-assignments', gradeAssignmentRouter);
 app.use('/api/v1/wlm-config', wlmConfigRouter);
+
+// Accountant & Fee Management Routes
+app.use('/api/v1/fee-structures', feeStructureRouter);
+app.use('/api/v1/student-fee-configs', studentFeeConfigRouter);
+app.use('/api/v1/fee-heads', feeHeadRouter);
+app.use('/api/v1/fee-invoices', feeInvoiceRouter);
+app.use('/api/v1/incomes', incomeRouter);
+app.use('/api/v1/expenses', expenseRouter);
+app.use('/api/v1/payrolls', payrollRouter);
+app.use('/api/v1/accountant-dashboard', accountantDashboardRouter);
+app.use('/api/v1/superadmin', superadminRouter);
+
 app.get('/', (req, res) => {
   res.send('Hello, World222!');
 });
 
 app.use(errorHandler);
 
-export default app;
+export default app;

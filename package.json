@@ -14,6 +14,7 @@
     "seed:teacher": "tsx src/seeders/teacher.seeder.ts",
     "seed:book": "tsx src/seeders/book.seeder.ts",
     "seed:exam": "tsx src/seeders/exam.seeder.ts"
+    "seed:account": "tsx src/seeders/account.seeder.ts"
   },
   "repository": {
     "type": "git",

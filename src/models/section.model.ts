@@ -18,3 +18,4 @@ const sectionSchema = new Schema<ISection>(
 );
 
 export const SectionModel = model<ISection>('Section', sectionSchema);
+export const Section = SectionModel;

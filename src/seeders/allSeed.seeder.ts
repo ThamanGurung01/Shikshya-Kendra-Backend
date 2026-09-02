@@ -25,6 +25,8 @@ async function main() {
 
   const { seedExams } = await import("./exam.seeder");
   await seedExams();
+  const { seedAccount } = await import("./account.seeder");
+  await seedAccount();
 
   console.log("=== All seeders completed successfully ===");
 

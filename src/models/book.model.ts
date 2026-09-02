@@ -90,4 +90,6 @@ const bookModel = mongoose.models.Book ||
   mongoose.model<IBook>("Book", bookSchema);
 
 export const BookModel = bookModel as any;
+export const Book = bookModel as any;
 export default bookModel;
+
