@@ -23,6 +23,8 @@ async function main() {
   const { seedBooks } = await import("./book.seeder");
   await seedBooks();
 
+  const { seedExams } = await import("./exam.seeder");
+  await seedExams();
   const { seedAccount } = await import("./account.seeder");
   await seedAccount();
 

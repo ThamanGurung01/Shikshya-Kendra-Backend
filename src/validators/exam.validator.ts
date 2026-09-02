@@ -16,6 +16,17 @@ export const ExamSchema = z.object({
     endTime: z.string(),
   })).optional(),
   status: z.enum(['draft', 'upcoming', 'active', 'ended']).optional(),
+  gradingSystem: z.enum(['gpa', 'percentage']).optional(),
+  examConfiguration: z.array(z.object({
+    classId: z.string().min(1, 'Class ID is required'),
+    subjects: z.array(z.object({
+      subjectId: z.string().min(1, 'Subject ID is required'),
+      theoryFullMarks: z.number().min(0),
+      theoryPassMarks: z.number().min(0),
+      practicalFullMarks: z.number().min(0),
+      practicalPassMarks: z.number().min(0),
+    })),
+  })).optional(),
 });
 
 export type IExamInput = z.infer<typeof ExamSchema>;

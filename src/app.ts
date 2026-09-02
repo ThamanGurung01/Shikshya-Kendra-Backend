@@ -34,6 +34,9 @@ import expenseRouter from './routes/expense.route';
 import payrollRouter from './routes/payroll.route';
 import accountantDashboardRouter from './routes/accountant-dashboard.route';
 import superadminRouter from './routes/superadmin.route';
+import resultRouter from './routes/result.route';
+import gradeAssignmentRouter from './routes/grade-assignment.route';
+import wlmConfigRouter from './routes/wlm-config.route';
 import { errorHandler } from './utils/error.util';
 const app = express();
 
@@ -87,6 +90,10 @@ app.use('/api/v1/assignments', assignmentRouter);
 app.use('/api/v1/book', bookRouter);
 app.use('/api/v1/library', libraryRouter);
 app.use('/api/v1/attendance', attendanceRouter);
+
+app.use('/api/v1/results', resultRouter);
+app.use('/api/v1/grade-assignments', gradeAssignmentRouter);
+app.use('/api/v1/wlm-config', wlmConfigRouter);
 
 // Accountant & Fee Management Routes
 app.use('/api/v1/fee-structures', feeStructureRouter);
