@@ -16,7 +16,7 @@ const storage = new CloudinaryStorage({
       : `${Date.now()}-${baseName.replace(/\s+/g, '-')}.${ext}`;
 
     return {
-      folder: file.fieldname === 'profileImage' ? 'profile-images'
+      folder: (file.fieldname === 'profileImage' || file.fieldname === 'image' || file.fieldname === 'avatar') ? 'profile-images'
         : studentDocFields.includes(file.fieldname) ? 'student-documents'
         : file.fieldname === 'logo' ? 'school-logos'
         : 'school-documents',
@@ -52,6 +52,24 @@ const fileFilter = (
   }
 };
 
+const imageOnlyFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowed = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/jpg',
+  ];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files (JPEG, PNG, WEBP) are allowed'));
+  }
+};
+
 export const uploadMiddleware = multer({
   storage,
   fileFilter,
@@ -73,4 +91,15 @@ export const uploadSingleFile = multer({
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
 }).single('file');
+
+export const uploadProfileImage = multer({
+  storage,
+  fileFilter: imageOnlyFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB per image
+}).fields([
+  { name: 'profileImage', maxCount: 1 },
+  { name: 'file', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
+]);
+
 

@@ -16,6 +16,8 @@ import { IUserInput } from '../validators/user.validator';
 import { generateUserEmail } from '../utils/email.util';
 import { IParentInput, ParentSchema } from '../validators/parent.validator';
 import { Parent } from '../models/parent.model';
+import { User } from '../models/user.model';
+import { Student } from '../models/student.model';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 interface UploadedFiles {
@@ -284,11 +286,16 @@ if(!parsed.success) {
     // Update user fields
     const userUpdateData: Partial<IUserInput> = {};
     if(parsedData.name !== undefined) userUpdateData.name = parsedData.name;
-    if(parsedData.profileImage !== undefined) userUpdateData.profileImage = parsedData.profileImage;
     if(parsedData.is_active !== undefined) userUpdateData.is_active = parsedData.is_active;
     if(parsedData.password) {
         userUpdateData.password = await hashPassword(parsedData.password);
     }
+
+    const effectivePhoto = parsedData.profileImage || parsedData.documents?.photoUrl;
+    if (effectivePhoto) {
+      userUpdateData.profileImage = effectivePhoto;
+    }
+
     if(Object.keys(userUpdateData).length > 0) {
         await userService.updateUser(rawIds.userId.toString(), userUpdateData);
     }
@@ -303,6 +310,9 @@ if(!parsed.success) {
     if(parsedData.studentName !== undefined) studentFields.studentName = parsedData.studentName;
     if(parsedData.parentId !== undefined) studentFields.parentId = parsedData.parentId;
     if(parsedData.documents !== undefined) studentFields.documents = parsedData.documents;
+    if(effectivePhoto) {
+      studentFields["documents.photoUrl"] = effectivePhoto;
+    }
     if(parsedData.healthInfo !== undefined) studentFields.healthInfo = parsedData.healthInfo;
     let student;
     if(Object.keys(studentFields).length > 0) {
@@ -387,3 +397,48 @@ try{
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
 }}
+
+// update student profile image (Admin/OAdmin only)
+export const updateStudentImage = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || Array.isArray(id)) return sendError(res, "ID is required", undefined, 400);
+    if (!Types.ObjectId.isValid(id)) {
+      return sendError(res, "Invalid ID format", undefined, 400);
+    }
+    if (!req.schoolId) return sendError(res, 'School context missing', undefined, 403);
+
+    const ownership = await studentService.getStudentSchoolId(id);
+    if (!ownership) return sendError(res, 'Student not found', undefined, 404);
+    if (ownership.schoolId.toString() !== req.schoolId) return sendError(res, 'Forbidden', undefined, 403);
+
+    const rawIds = await studentService.getStudentRawIds(id);
+    if (!rawIds) return sendError(res, 'Student not found', undefined, 404);
+
+    const files = (req.files ?? {}) as { [fieldname: string]: Express.Multer.File[] };
+    const uploadedFile = files.profileImage?.[0] || files.photo?.[0] || files.file?.[0] || files.image?.[0] || (req.file as any);
+    const imageUrl = (uploadedFile as any)?.path || req.body?.profileImage || req.body?.imageUrl;
+
+    if (!imageUrl) {
+      return sendError(res, "No image file or URL provided", undefined, 400);
+    }
+
+    // Update user's profileImage
+    await User.findByIdAndUpdate(rawIds.userId, { $set: { profileImage: imageUrl } }, { new: true });
+
+    // Update student's photoUrl in documents
+    const updatedStudent = await Student.findOneAndUpdate(
+      { _id: id, schoolId: req.schoolId },
+      { $set: { "documents.photoUrl": imageUrl } },
+      { new: true, runValidators: true }
+    );
+
+    sendSuccess(res, "Student profile image updated successfully", {
+      profileImage: imageUrl,
+      student: updatedStudent,
+    }, 200);
+  } catch (error) {
+    console.error("Update student image error:", error);
+    sendError(res, "Internal Server Error", undefined, 500);
+  }
+};

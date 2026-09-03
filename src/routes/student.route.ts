@@ -6,10 +6,11 @@ import {
   getAllStudents,
   getStudentById,
   updateStudent,
+  updateStudentImage,
 } from "../controllers/student.controller";
 import Role from "../utils/role.util";
 import { authorize } from "../middlewares/role.middleware";
-import { uploadMiddleware } from "../middlewares/upload.middleware";
+import { uploadMiddleware, uploadProfileImage } from "../middlewares/upload.middleware";
 
 /**
  * @swagger
@@ -707,6 +708,13 @@ studentRouter.put(
   authorize([Role.OADMIN, Role.ADMIN]),
   uploadMiddleware,
   updateStudent,
+);
+studentRouter.patch(
+  "/:id/image",
+  authenticate,
+  authorize([Role.OADMIN, Role.ADMIN]),
+  uploadProfileImage,
+  updateStudentImage,
 );
 studentRouter.delete(
   "/:id",
