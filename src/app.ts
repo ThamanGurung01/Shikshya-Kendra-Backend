@@ -37,6 +37,7 @@ import superadminRouter from './routes/superadmin.route';
 import resultRouter from './routes/result.route';
 import gradeAssignmentRouter from './routes/grade-assignment.route';
 import wlmConfigRouter from './routes/wlm-config.route';
+import studentPromotionRouter from './routes/student-promotion.route';
 import { errorHandler } from './utils/error.util';
 const app = express();
 
@@ -72,6 +73,7 @@ app.use('/api/v1', fileRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/school', schoolRouter);
 app.use('/api/v1/student',studentRouter);
+app.use('/api/v1/student-promotion', studentPromotionRouter);
 app.use('/api/v1/parent',parentRouter);
 app.use('/api/v1/academic-year',academicYearRouter);
 app.use('/api/v1/class', classRouter);

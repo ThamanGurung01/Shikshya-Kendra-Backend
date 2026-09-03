@@ -199,20 +199,33 @@ try{
 sendError(res,"Internal Server Error",undefined,500);
 }
 }
+
 //get all students
 export const getAllStudents=async(req:AuthenticatedRequest,res:Response)=>{
 try{
     if(!req.schoolId) return sendError(res,'School context missing',undefined,403);
     const students=await studentService.getAllStudentsBySchool(req.schoolId);
     if(students.length===0) return sendSuccess(res,"Student not found",[],200);
+
     // Attach enrollment data to each student
     const studentIds = students.map(s => (s._id as Types.ObjectId).toString());
     const enrollments = await enrollmentService.getStudentEnrollmentsByStudentIds(studentIds);
-    const enrollmentMap = new Map(enrollments.map(e => [e.studentId.toString(), e]));
+    const enrollmentsMap = new Map<string, any[]>();
+    enrollments.forEach(e => {
+      const sId = e.studentId.toString();
+      if (!enrollmentsMap.has(sId)) {
+        enrollmentsMap.set(sId, []);
+      }
+      enrollmentsMap.get(sId)!.push(e);
+    });
+
     const studentsWithEnrollment = students.map(s => {
         const data: Record<string, unknown> = s.toObject() as unknown as Record<string, unknown>;
-        const enrollment = enrollmentMap.get((s._id as Types.ObjectId).toString());
-        if (enrollment) data.enrollment = enrollment;
+        const sId = (s._id as Types.ObjectId).toString();
+        const studentEnrollments = enrollmentsMap.get(sId) || [];
+        const activeEnrollment = studentEnrollments.find(e => e.studentEnrollmentStatus === 'active') || studentEnrollments[0];
+        if (activeEnrollment) data.enrollment = activeEnrollment;
+        data.enrollments = studentEnrollments;
         return data;
     });
     sendSuccess(res, "Students retrieved successfully", studentsWithEnrollment, 200);
@@ -220,6 +233,7 @@ try{
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
 }}
+
 //get student by id
 export const getStudentById=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -240,16 +254,20 @@ try{
     if(!student) return sendSuccess(res,"Student not found",{},200);
     const studentData: Record<string, unknown> = student.toObject() as unknown as Record<string, unknown>;
 
-    // Fetch enrollment with populated academic year, class, and section
-    const enrollment = await enrollmentService.getStudentEnrollmentByStudentId((student._id as Types.ObjectId).toString());
-    if(enrollment) {
-        studentData.enrollment = enrollment;
+    // Fetch enrollments with populated academic year, class, and section
+    const sId = (student._id as Types.ObjectId).toString();
+    const enrollments = await enrollmentService.getStudentEnrollmentsByStudentIds([sId]);
+    const activeEnrollment = enrollments.find(e => e.studentEnrollmentStatus === 'active') || enrollments[0];
+    if(activeEnrollment) {
+        studentData.enrollment = activeEnrollment;
     }
+    studentData.enrollments = enrollments;
     sendSuccess(res, "Student retrieved successfully", studentData, 200);
 }catch(error){
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
 }}
+
 //update student
 export const updateStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -373,6 +391,7 @@ if(!parsed.success) {
     console.error(error);
 sendError(res,"Internal Server Error",undefined,500);
 }}
+
 //hard delete student
 export const hardDeleteStudent=async(req:AuthenticatedRequest,res:Response)=>{
 try{
@@ -441,4 +460,4 @@ export const updateStudentImage = async (req: AuthenticatedRequest, res: Respons
     console.error("Update student image error:", error);
     sendError(res, "Internal Server Error", undefined, 500);
   }
-};
+};
