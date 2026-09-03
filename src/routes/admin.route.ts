@@ -10,6 +10,7 @@ import {
   hardDeleteAdmin,
   resetUserPassword,
 } from '../controllers/admin.controller';
+import { getAdminDashboardStats } from '../controllers/admin-dashboard.controller';
 
 /**
  * @swagger
@@ -452,6 +453,7 @@ import {
 const adminRouter = Router();
 
 adminRouter.post('/reset-user-password', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.SUPERADMIN]), resetUserPassword);
+adminRouter.get('/dashboard-stats', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.SUPERADMIN]), getAdminDashboardStats);
 adminRouter.post('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), createAdmin);
 adminRouter.get('/', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAllAdmins);
 adminRouter.get('/:id', authenticate, authorize([Role.OADMIN,Role.ADMIN]), getAdminById);
