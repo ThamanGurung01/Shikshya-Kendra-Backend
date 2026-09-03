@@ -25,34 +25,37 @@ const studentSchema=z.object({
 })
 export const studentCreate=studentSchema.extend(userSchema.shape);
 export const studentFullSchema=studentCreate.extend(StudentEnrollmentSchema.shape);
-export const studentUpdate=z.object({
-    studentName:z.string().min(3,"Name must be at least 3 characters long").optional(),
-    address:z.string().min(5,"Address must be at least 5 characters long").optional(),
-    gender:z.string().min(1,"Gender is required").optional(),
-    contact:z.string().min(10,"Contact number must be at least 10 characters long").optional(),
-    dob:z.string().min(1,"Date of birth is required").optional(),
-    student_email:z.email("Invalid email address").optional(),
-    status:z.enum(["active" , "transferred" , "graduated" , "dropped"]).optional(),
-    parentId:z.string().optional(),
-    name:z.string().min(3,"Name must be at least 3 characters long").optional(),
-    password:z.string().min(6,"Password must be at least 6 characters long").optional(),
-    profileImage:z.string().optional(),
-    is_active:z.coerce.boolean().optional(),
-    documents:z.object({
-      photoUrl:z.string().optional(),
-      birthCertificateUrl:z.string().optional(),
-      transferCertificateUrl:z.string().optional(),
-      previousMarksheetUrl:z.string().optional(),
-      citizenshipOrIdUrl:z.string().optional(),
+const emptyToUndefined = (val: unknown) =>
+  val === "" || val === "undefined" || val === "null" || val === null ? undefined : val;
+
+export const studentUpdate = z.object({
+    studentName: z.preprocess(emptyToUndefined, z.string().min(3, "Name must be at least 3 characters long").optional()),
+    address: z.preprocess(emptyToUndefined, z.string().min(5, "Address must be at least 5 characters long").optional()),
+    gender: z.preprocess(emptyToUndefined, z.string().min(1, "Gender is required").optional()),
+    contact: z.preprocess(emptyToUndefined, z.string().min(10, "Contact number must be at least 10 characters long").optional()),
+    dob: z.preprocess(emptyToUndefined, z.string().min(1, "Date of birth is required").optional()),
+    student_email: z.preprocess(emptyToUndefined, z.string().email("Invalid email address").optional()),
+    status: z.preprocess(emptyToUndefined, z.enum(["active", "transferred", "graduated", "dropped"]).optional()),
+    parentId: z.preprocess(emptyToUndefined, z.string().optional()),
+    name: z.preprocess(emptyToUndefined, z.string().min(3, "Name must be at least 3 characters long").optional()),
+    password: z.preprocess(emptyToUndefined, z.string().min(6, "Password must be at least 6 characters long").optional()),
+    profileImage: z.preprocess(emptyToUndefined, z.string().optional()),
+    is_active: z.preprocess(emptyToUndefined, z.coerce.boolean().optional()),
+    documents: z.object({
+      photoUrl: z.preprocess(emptyToUndefined, z.string().optional()),
+      birthCertificateUrl: z.preprocess(emptyToUndefined, z.string().optional()),
+      transferCertificateUrl: z.preprocess(emptyToUndefined, z.string().optional()),
+      previousMarksheetUrl: z.preprocess(emptyToUndefined, z.string().optional()),
+      citizenshipOrIdUrl: z.preprocess(emptyToUndefined, z.string().optional()),
     }).optional(),
-    healthInfo:z.object({
-      bloodGroup:z.string().optional(),
+    healthInfo: z.object({
+      bloodGroup: z.preprocess(emptyToUndefined, z.string().optional()),
     }).optional(),
-    academicYearId:z.string().min(1,"academicYearId is required").optional(),
-    classId:z.string().min(1,"classId is required").optional(),
-    sectionId:z.string().min(1,"sectionId is required").optional(),
-    rollNumber:z.coerce.number().int().min(1,"rollNumber is required").optional(),
-    promotedFromEnrollmentId:z.string().optional(),
+    academicYearId: z.preprocess(emptyToUndefined, z.string().min(1, "academicYearId is required").optional()),
+    classId: z.preprocess(emptyToUndefined, z.string().min(1, "classId is required").optional()),
+    sectionId: z.preprocess(emptyToUndefined, z.string().min(1, "sectionId is required").optional()),
+    rollNumber: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1, "rollNumber is required").optional()),
+    promotedFromEnrollmentId: z.preprocess(emptyToUndefined, z.string().optional()),
 });
 export type IStudentCreate=z.infer<typeof studentSchema>;
 export interface IStudentInput extends IStudentCreate{

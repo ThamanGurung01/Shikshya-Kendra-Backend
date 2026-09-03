@@ -1,6 +1,7 @@
 import {Router} from 'express';
-import { authCheck, login, logout } from '../controllers/auth.controller';
+import { authCheck, login, logout, getProfile, updateProfileContact, updateProfileImage, changePassword } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
+import { uploadProfileImage } from '../middlewares/upload.middleware';
 const authRouter=Router();
 /**
  * @swagger
@@ -200,4 +201,10 @@ const authRouter=Router();
 authRouter.post('/login',login);
 authRouter.get('/me',authenticate,authCheck);
 authRouter.post('/logout',logout);
+
+authRouter.get('/profile', authenticate, getProfile);
+authRouter.patch('/profile', authenticate, updateProfileContact);
+authRouter.patch('/profile/image', authenticate, uploadProfileImage, updateProfileImage);
+authRouter.put('/change-password', authenticate, changePassword);
+
 export default authRouter;
