@@ -201,27 +201,18 @@ export const getMyResults = async (
   role: string,
   userId: string,
   studentId?: string,
+  academicYearId?: string,
 ) => {
-  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
-  if (!activeYear) throw new Error('No active academic year found');
-
-  let classId: string | null = null;
   let targetStudentId: string | null = null;
 
   if (role === 'student') {
     const student = await Student.findOne({ userId, schoolId }).lean();
     if (!student) throw new Error('Student not found');
     targetStudentId = String(student._id);
-    const enrollment = await StudentEnrollment.findOne({
-      studentId: student._id,
-      academicYearId: activeYear._id,
-    }).lean();
-    if (!enrollment) throw new Error('No active enrollment found for student');
-    classId = String(enrollment.classId);
   } else if (role === 'parent') {
     const parent = await Parent.findOne({ userId }).lean();
     if (!parent) throw new Error('Parent not found');
-    
+
     if (!studentId) {
       return [];
     }
@@ -229,25 +220,41 @@ export const getMyResults = async (
     const student = await Student.findOne({ _id: studentId, parentId: parent._id, schoolId }).lean();
     if (!student) throw new Error('Student not found or not associated with this parent');
     targetStudentId = String(student._id);
-
-    const enrollment = await StudentEnrollment.findOne({
-      studentId: student._id,
-      academicYearId: activeYear._id,
-    }).lean();
-    if (!enrollment) throw new Error('No active enrollment found for student');
-    classId = String(enrollment.classId);
   }
 
-  if (!classId) return [];
+  if (!targetStudentId) return [];
 
-  // Get all published results that contain the student's class
-  const results = await ResultModel.find({
+  // Query enrollments for this student (past and present)
+  const enrollmentQuery: any = { studentId: targetStudentId };
+  if (academicYearId) {
+    enrollmentQuery.academicYearId = academicYearId;
+  }
+
+  const enrollments = await StudentEnrollment.find(enrollmentQuery)
+    .populate('academicYearId', 'name startDate endDate isCurrent')
+    .lean();
+
+  if (!enrollments || enrollments.length === 0) return [];
+
+  // Match any published results whose academicYearId and classIds match the student's enrollments
+  const orConditions = enrollments.map((enr) => ({
+    academicYearId: (enr.academicYearId as any)?._id || enr.academicYearId,
+    classIds: (enr.classId as any)?._id || enr.classId,
+  }));
+
+  const resultQuery: any = {
     schoolId,
-    academicYearId: activeYear._id,
     status: 'published',
-    classIds: new Types.ObjectId(classId),
-  })
+    $or: orConditions,
+  };
+
+  if (academicYearId) {
+    resultQuery.academicYearId = new Types.ObjectId(academicYearId);
+  }
+
+  const results = await ResultModel.find(resultQuery)
     .populate('examId', 'name startDate endDate gradingSystem')
+    .populate('academicYearId', 'name startDate endDate isCurrent')
     .populate('classIds', 'name')
     .populate('schoolId', 'school_name address contact logo')
     .sort({ createdAt: -1 })
@@ -268,9 +275,6 @@ export const getMyResultDetails = async (
   userId: string,
   studentId?: string,
 ) => {
-  const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
-  if (!activeYear) throw new Error('No active academic year found');
-
   const schoolDetails = await School.findById(schoolId).select('school_name address contact school_email logo').lean();
 
   // Verify that the result is published and exists in the school
@@ -278,11 +282,13 @@ export const getMyResultDetails = async (
     .populate('examId', 'name startDate endDate gradingSystem examConfiguration')
     .populate('classIds', 'name')
     .populate('schoolId', 'school_name address contact logo')
+    .populate('academicYearId', 'name startDate endDate isCurrent')
     .lean();
   if (!result) throw new Error('Result not found or not published');
 
   let targetStudentId: string | null = null;
   let targetEnrollment: any = null;
+  const resultAcademicYearId = (result.academicYearId as any)?._id || result.academicYearId;
 
   if (role === 'student') {
     const student = await Student.findOne({ userId, schoolId }).lean();
@@ -290,11 +296,21 @@ export const getMyResultDetails = async (
     targetStudentId = String(student._id);
     targetEnrollment = await StudentEnrollment.findOne({
       studentId: student._id,
-      academicYearId: activeYear._id,
+      academicYearId: resultAcademicYearId,
     })
       .populate('classId', 'name')
       .populate('sectionId', 'name')
       .lean();
+
+    if (!targetEnrollment) {
+      targetEnrollment = await StudentEnrollment.findOne({
+        studentId: student._id,
+      })
+        .populate('classId', 'name')
+        .populate('sectionId', 'name')
+        .sort({ createdAt: -1 })
+        .lean();
+    }
   } else if (role === 'parent') {
     const parent = await Parent.findOne({ userId }).lean();
     if (!parent) throw new Error('Parent not found');
@@ -309,11 +325,21 @@ export const getMyResultDetails = async (
 
     targetEnrollment = await StudentEnrollment.findOne({
       studentId: student._id,
-      academicYearId: activeYear._id,
+      academicYearId: resultAcademicYearId,
     })
       .populate('classId', 'name')
       .populate('sectionId', 'name')
       .lean();
+
+    if (!targetEnrollment) {
+      targetEnrollment = await StudentEnrollment.findOne({
+        studentId: student._id,
+      })
+        .populate('classId', 'name')
+        .populate('sectionId', 'name')
+        .sort({ createdAt: -1 })
+        .lean();
+    }
   }
 
   if (!targetStudentId || !targetEnrollment) throw new Error('Student enrollment details not found');

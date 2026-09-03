@@ -169,7 +169,7 @@ export const getMyResults = async (req: AuthenticatedRequest, res: Response) => 
 
     const role = req.role;
     const userId = req.userId;
-    const { studentId } = req.query;
+    const { studentId, academicYearId } = req.query;
 
     if (!role || !userId) return sendError(res, 'User information not found', undefined, 400);
 
@@ -177,7 +177,8 @@ export const getMyResults = async (req: AuthenticatedRequest, res: Response) => 
       schoolId as string,
       role!,
       userId!,
-      studentId as string | undefined
+      studentId as string | undefined,
+      academicYearId as string | undefined,
     );
     return sendSuccess(res, 'Results retrieved successfully', results);
   } catch (error: any) {
