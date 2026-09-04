@@ -3,7 +3,7 @@ import { Student } from "../models/student.model";
 import { IStudentInput } from "../validators/student.validator";
 
 const userSelect = 'name email profileImage role is_active';
-const schoolSelect = 'school_name logo address contact city -_id';
+const schoolSelect = 'school_name logo address contact city _id';
 
 //create
 export const createStudent=async(data:IStudentInput,others:Record<string,unknown>={}, session?: any)=>{
