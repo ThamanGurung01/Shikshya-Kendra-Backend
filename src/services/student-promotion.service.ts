@@ -92,14 +92,21 @@ export const getPromotionEligibility = async (
     status: "published",
   }).lean();
 
+  // Sort by publishedAt descending to prioritize the latest exam score
+  results.sort((a: any, b: any) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+
   const studentResultMap = new Map<string, { comprehensiveScore?: number; examScore?: number }>();
   results.forEach((res) => {
     if (res.wlmScores) {
-      res.wlmScores.forEach((wlm) => {
-        studentResultMap.set(wlm.studentId.toString(), {
-          comprehensiveScore: wlm.comprehensiveScore,
-          examScore: wlm.examScore,
-        });
+      res.wlmScores.forEach((wlm: any) => {
+        const sId = wlm.studentId.toString();
+        // Only set if not already set by a more recent exam
+        if (!studentResultMap.has(sId)) {
+          studentResultMap.set(sId, {
+            comprehensiveScore: wlm.comprehensiveScore,
+            examScore: wlm.examScore,
+          });
+        }
       });
     }
   });
@@ -120,9 +127,11 @@ export const getPromotionEligibility = async (
       currentRollNumber: e.rollNumber || null,
       currentClass: e.classId,
       currentSection: e.sectionId,
+      enrollmentStatus: e.studentEnrollmentStatus || "active",
+      studentStatus: e.studentId?.status || "active",
       hasPendingFees: !!feeInfo && feeInfo.totalPendingAmount > 0,
       pendingFeeAmount: feeInfo ? feeInfo.totalPendingAmount : 0,
-      alreadyEnrolledInTarget: !!existingTarget,
+      alreadyEnrolledInTarget: !!existingTarget && existingTarget.studentEnrollmentStatus === "active",
       targetEnrollmentDetails: existingTarget
         ? {
             class: existingTarget.classId,
@@ -155,8 +164,28 @@ export const executeBulkPromotion = async (
 
     const promotedRecords: any[] = [];
 
-    // Auto-calculate starting roll numbers if not provided
-    let autoRollCounter = 1;
+    const sourceYear = await AcademicYear.findById(sourceYearId).session(session);
+    const leftAtDate = sourceYear?.endDate ? new Date(sourceYear.endDate) : new Date();
+
+    const maxRollPerSection = new Map<string, number>();
+
+    const getNextRollNumber = async (sectionId: string, classId: string) => {
+      if (!maxRollPerSection.has(sectionId)) {
+        const highestEnrollment = await StudentEnrollment.findOne({
+          schoolId: schoolObjId,
+          academicYearId: targetYearId,
+          classId: new Types.ObjectId(classId),
+          sectionId: new Types.ObjectId(sectionId),
+        })
+          .sort("-rollNumber")
+          .select("rollNumber")
+          .session(session);
+        maxRollPerSection.set(sectionId, highestEnrollment?.rollNumber || 0);
+      }
+      const nextRoll = maxRollPerSection.get(sectionId)! + 1;
+      maxRollPerSection.set(sectionId, nextRoll);
+      return nextRoll;
+    };
 
     for (const item of payload.promotions) {
       const studentObjId = new Types.ObjectId(item.studentId);
@@ -179,7 +208,7 @@ export const executeBulkPromotion = async (
 
       if (sourceEnrollment) {
         sourceEnrollment.studentEnrollmentStatus = newSourceStatus;
-        sourceEnrollment.leftAt = new Date();
+        sourceEnrollment.leftAt = leftAtDate;
         await sourceEnrollment.save({ session });
       }
 
@@ -189,6 +218,20 @@ export const executeBulkPromotion = async (
           { $set: { status: "graduated" } },
           { session },
         );
+
+        // If target enrollment exists in target academic year, update it to graduated so student is no longer active in target year
+        const targetEnrollment = await StudentEnrollment.findOne({
+          schoolId: schoolObjId,
+          academicYearId: targetYearId,
+          studentId: studentObjId,
+        }).session(session);
+
+        if (targetEnrollment) {
+          targetEnrollment.studentEnrollmentStatus = "graduated";
+          targetEnrollment.leftAt = leftAtDate;
+          await targetEnrollment.save({ session });
+        }
+
         promotedRecords.push({
           studentId: item.studentId,
           action: "graduate",
@@ -197,20 +240,43 @@ export const executeBulkPromotion = async (
         continue;
       }
 
+      // Only set status to active if they were wrongly marked as graduated
+      await Student.updateOne(
+        { _id: studentObjId, schoolId: schoolObjId, status: "graduated" },
+        { $set: { status: "active" } },
+        { session },
+      );
+
       // Determine target class & section
       const targetClassId =
         item.action === "retain"
           ? new Types.ObjectId(payload.sourceClassId)
           : defaultTargetClassId;
 
-      const targetSectionId =
-        item.targetSectionId
+      let targetSectionId: Types.ObjectId;
+      if (item.action === "retain") {
+        if (sourceEnrollment?.sectionId) {
+          targetSectionId = sourceEnrollment.sectionId as Types.ObjectId;
+        } else if (payload.sourceSectionId) {
+          targetSectionId = new Types.ObjectId(payload.sourceSectionId);
+        } else {
+          throw new Error(`Cannot determine section for retained student ${item.studentId}`);
+        }
+      } else {
+        targetSectionId = item.targetSectionId
           ? new Types.ObjectId(item.targetSectionId)
-          : item.action === "retain" && payload.sourceSectionId
-          ? new Types.ObjectId(payload.sourceSectionId)
           : defaultTargetSectionId;
+      }
 
-      const rollNumber = item.targetRollNumber ?? autoRollCounter++;
+      let rollNumber = item.targetRollNumber;
+      if (rollNumber == null) {
+        rollNumber = await getNextRollNumber(targetSectionId.toString(), targetClassId.toString());
+      } else {
+        const currentMax = maxRollPerSection.get(targetSectionId.toString()) || 0;
+        if (rollNumber > currentMax) {
+          maxRollPerSection.set(targetSectionId.toString(), rollNumber);
+        }
+      }
 
       // Check if target enrollment already exists
       let targetEnrollment = await StudentEnrollment.findOne({

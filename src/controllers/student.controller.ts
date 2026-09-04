@@ -223,8 +223,8 @@ try{
         const data: Record<string, unknown> = s.toObject() as unknown as Record<string, unknown>;
         const sId = (s._id as Types.ObjectId).toString();
         const studentEnrollments = enrollmentsMap.get(sId) || [];
-        const activeEnrollment = studentEnrollments.find(e => e.studentEnrollmentStatus === 'active') || studentEnrollments[0];
-        if (activeEnrollment) data.enrollment = activeEnrollment;
+        const activeEnrollment = studentEnrollments.find(e => e.studentEnrollmentStatus === 'active');
+        data.enrollment = activeEnrollment || null;
         data.enrollments = studentEnrollments;
         return data;
     });
@@ -257,10 +257,8 @@ try{
     // Fetch enrollments with populated academic year, class, and section
     const sId = (student._id as Types.ObjectId).toString();
     const enrollments = await enrollmentService.getStudentEnrollmentsByStudentIds([sId]);
-    const activeEnrollment = enrollments.find(e => e.studentEnrollmentStatus === 'active') || enrollments[0];
-    if(activeEnrollment) {
-        studentData.enrollment = activeEnrollment;
-    }
+    const activeEnrollment = enrollments.find(e => e.studentEnrollmentStatus === 'active');
+    studentData.enrollment = activeEnrollment || null;
     studentData.enrollments = enrollments;
     sendSuccess(res, "Student retrieved successfully", studentData, 200);
 }catch(error){
