@@ -3,9 +3,10 @@ import type { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import {
   submitAttendanceService,
   getAttendanceService,
-  getAssignedClassService
+  getAssignedClassService,
+  scanQrAttendanceService
 } from "../services/attendance.service";
-import { submitAttendanceSchema } from "../validators/attendance.validator";
+import { submitAttendanceSchema, scanQrAttendanceSchema } from "../validators/attendance.validator";
 import { sendSuccess, sendError } from "../utils/response.util";
 
 export const submitAttendance = async (
@@ -94,5 +95,31 @@ export const getAssignedClass = async (
     console.error("Get assigned class error:", error);
     const status = error.statusCode || 500;
     return sendError(res, error.message || "Error fetching assigned class", error.message, status);
+  }
+};
+
+export const scanQrAttendance = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const schoolId = req.schoolId;
+    const userId = req.userId;
+    const role = req.role;
+    if (!schoolId || !userId || !role) {
+      return sendError(res, "User session details not found", undefined, 400);
+    }
+
+    const parseResult = scanQrAttendanceSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return sendError(res, "Validation failed", parseResult.error.issues.map((e: any) => e.message), 400);
+    }
+
+    const data = await scanQrAttendanceService(schoolId, userId, role, parseResult.data);
+    return sendSuccess(res, data.message || "Attendance recorded successfully", data, 200);
+  } catch (error: any) {
+    console.error("Scan QR attendance error:", error);
+    const status = error.statusCode || 500;
+    return sendError(res, error.message || "Error processing QR attendance", error.message, status);
   }
 };

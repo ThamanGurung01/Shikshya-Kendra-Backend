@@ -13,3 +13,8 @@ export const submitAttendanceSchema = z.object({
   date: z.string().refine((val) => !isNaN(Date.parse(val)), "Valid date is required"),
   records: z.array(attendanceRecordSchema),
 });
+
+export const scanQrAttendanceSchema = z.object({
+  qrData: z.string().min(1, "QR data is required"),
+  date: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), "Valid date format required"),
+});
