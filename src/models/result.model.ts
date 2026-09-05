@@ -7,7 +7,12 @@ export interface IWlmScore {
   examScore: number;
   attendanceScore: number;
   assignmentScore: number;
+  conductScore?: number;
+  punctualityScore?: number;
   comprehensiveScore: number;
+  classRank?: number;
+  sectionRank?: number;
+  performanceTier?: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE';
 }
 
 export interface IResult extends Document {
@@ -46,7 +51,16 @@ const resultSchema = new Schema<IResult>(
       examScore: { type: Number, required: true },
       attendanceScore: { type: Number, required: true },
       assignmentScore: { type: Number, required: true },
+      conductScore: { type: Number, default: 100 },
+      punctualityScore: { type: Number, default: 100 },
       comprehensiveScore: { type: Number, required: true },
+      classRank: { type: Number, default: 1 },
+      sectionRank: { type: Number, default: 1 },
+      performanceTier: {
+        type: String,
+        enum: ['TOP_PERFORMER', 'AVERAGE', 'NEEDS_GUIDANCE'],
+        default: 'AVERAGE',
+      },
     }],
   },
   { timestamps: true },

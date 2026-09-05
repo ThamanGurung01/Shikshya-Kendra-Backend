@@ -107,3 +107,39 @@ export const recalculateWlm = async (req: AuthenticatedRequest, res: Response) =
     return sendError(res, error.message || 'Internal Server Error', undefined, 500);
   }
 };
+
+export const getAnnualPerformance = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const studentId = req.params.studentId as string;
+    const academicYearId = req.query.academicYearId as string | undefined;
+
+    const data = await WlmService.calculateAnnualPerformance(studentId, schoolId, academicYearId);
+    return sendSuccess(res, 'Annual academic performance retrieved successfully', data);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};
+
+export const getClassRankings = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const schoolId = resolveSchoolId(req);
+    if (!schoolId) return sendError(res, 'School ID is required', undefined, 400);
+
+    const classId = req.query.classId as string;
+    if (!classId) return sendError(res, 'Class ID is required', undefined, 400);
+
+    const sectionId = req.query.sectionId as string | undefined;
+    const academicYearId = req.query.academicYearId as string | undefined;
+    const resultId = req.query.resultId as string | undefined;
+
+    const data = await WlmService.getClassRankings(schoolId, classId, sectionId, academicYearId, resultId);
+    return sendSuccess(res, 'Class rankings retrieved successfully', data);
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, error.message || 'Internal Server Error', undefined, 500);
+  }
+};

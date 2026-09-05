@@ -5,6 +5,8 @@ import { AssignmentSubmission } from '../models/assignment-submission.model';
 import { Assignment } from '../models/assignment.model';
 import { AcademicYear } from '../models/academic-year.model';
 import { StudentEnrollment } from '../models/student-enrollment.model';
+import { ResultModel } from '../models/result.model';
+import { Types } from 'mongoose';
 
 export interface IWlmBreakdown {
   studentId: string;
@@ -13,13 +15,46 @@ export interface IWlmBreakdown {
   examScore: number;
   attendanceScore: number;
   assignmentScore: number;
+  conductScore: number;
+  punctualityScore: number;
   comprehensiveScore: number;
+  classRank: number;
+  sectionRank: number;
+  performanceTier: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE';
+}
+
+export interface IAnnualPerformanceTerm {
+  resultId: string;
+  examId: string;
+  examName: string;
+  examDate: Date;
+  isMajorExam: boolean;
+  contributionWeight: number;
+  examScore: number;
+  attendanceScore: number;
+  assignmentScore: number;
+  conductScore: number;
+  punctualityScore: number;
+  comprehensiveScore: number;
+  classRank: number;
+}
+
+export interface IAnnualPerformanceSummary {
+  studentId: string;
+  academicYearId: string;
+  academicYearName: string;
+  annualComprehensiveScore: number;
+  performanceTier: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE';
+  terms: IAnnualPerformanceTerm[];
+  totalMajorExamsCount: number;
+  trend: 'IMPROVING' | 'STABLE' | 'DECLINING';
+  scoreDelta: number;
 }
 
 /**
  * Calculate WLM scores for all students in a given class+section for a specific result.
- * This function handles ONE class+section.
- * The caller loops through all class+section combos and merges results.
+ * Features 5-pillar dynamic weights, subject credit-weighting, punctuality scores,
+ * competition ranking (1st, 2nd, 3rd...), and performance tier categorization.
  */
 export async function calculateWlmScores(
   resultId: string,
@@ -32,9 +67,11 @@ export async function calculateWlmScores(
   // 1. Load weights (fall back to defaults if no config)
   const config = await WlmConfig.findOne({ schoolId }).lean();
   const weights = {
-    exam: config?.examWeight ?? 0.50,
-    attendance: config?.attendanceWeight ?? 0.30,
-    assignment: config?.assignmentWeight ?? 0.20,
+    exam: config?.examWeight ?? 0.45,
+    attendance: config?.attendanceWeight ?? 0.20,
+    assignment: config?.assignmentWeight ?? 0.15,
+    conduct: config?.conductWeight ?? 0.10,
+    punctuality: config?.punctualityWeight ?? 0.10,
   };
 
   // 2. Load academic year dates
@@ -92,15 +129,17 @@ export async function calculateWlmScores(
     date: { $gte: yearStart, $lte: examEndDate },
   }).lean();
 
-  // Compute attendance per student
+  // Compute attendance and punctuality scores per student
   const attendanceScoreMap = new Map<string, number>();
+  const punctualityScoreMap = new Map<string, number>();
+
   for (const sid of studentIds) {
-    // For mid-term students, only count from their joinedAt date
     const joinedAt = enrollmentMap.get(sid);
     const studentStart = joinedAt && joinedAt > yearStart ? joinedAt : yearStart;
 
-    let present = 0;
-    let total = 0;
+    let presentWeight = 0;
+    let punctualityWeight = 0;
+    let totalDays = 0;
 
     for (const doc of attendanceDocs) {
       if (doc.date < studentStart) continue;
@@ -110,25 +149,37 @@ export async function calculateWlmScores(
       );
       if (!record) continue;
 
-      total++;
+      totalDays++;
       switch (record.status) {
         case 'PRESENT':
+          presentWeight += 1.0;
+          punctualityWeight += 1.0; // 100% punctuality
+          break;
         case 'LATE':
-          present += 1;
+          presentWeight += 1.0;
+          punctualityWeight += 0.5; // 50% punctuality for being late
           break;
         case 'HALF_DAY':
-          present += 0.5;
+          presentWeight += 0.5;
+          punctualityWeight += 0.5;
           break;
         case 'ABSENT':
-          present += 0;
+        default:
+          presentWeight += 0.0;
+          punctualityWeight += 0.0;
           break;
       }
     }
 
-    const score = total > 0
-      ? Math.round((present / total) * 10000) / 100
-      : 100; // No attendance records → don't penalize
-    attendanceScoreMap.set(sid, score);
+    const attScore = totalDays > 0
+      ? Math.round((presentWeight / totalDays) * 10000) / 100
+      : 100;
+    const puncScore = totalDays > 0
+      ? Math.round((punctualityWeight / totalDays) * 10000) / 100
+      : 100;
+
+    attendanceScoreMap.set(sid, attScore);
+    punctualityScoreMap.set(sid, puncScore);
   }
 
   // 6. Fetch assignments scoped to academic year date range
@@ -140,7 +191,6 @@ export async function calculateWlmScores(
   const assignmentScoreMap = new Map<string, number>();
 
   if (assignments.length === 0) {
-    // No assignments → full marks for everyone
     for (const sid of studentIds) {
       assignmentScoreMap.set(sid, 100);
     }
@@ -150,7 +200,6 @@ export async function calculateWlmScores(
       assignmentId: { $in: assignmentIds },
     }).lean();
 
-    // Map: studentId -> assignmentId -> submission
     const submissionMap = new Map<string, Map<string, typeof submissions[0]>>();
     for (const sub of submissions) {
       const sid = String(sub.studentId);
@@ -167,12 +216,11 @@ export async function calculateWlmScores(
       for (const assignment of assignments) {
         const sub = studentSubs.get(String(assignment._id));
         if (!sub) {
-          // No submission record at all → treat as PENDING (0)
           weightedScore += 0;
         } else {
           switch (sub.status) {
             case 'COMPLETED':
-              weightedScore += 1;
+              weightedScore += 1.0;
               break;
             case 'SUBMITTED':
               weightedScore += 0.75;
@@ -193,44 +241,74 @@ export async function calculateWlmScores(
     }
   }
 
-  // 7. Apply formula per student
-  const results: IWlmBreakdown[] = [];
+  // 7. Calculate Comprehensive Score for each student
+  const rawResults: IWlmBreakdown[] = [];
   for (const sid of studentIds) {
     const examScore = examScoreMap.get(sid) ?? 0;
     const attendanceScore = attendanceScoreMap.get(sid) ?? 0;
     const assignmentScore = assignmentScoreMap.get(sid) ?? 0;
+    const punctualityScore = punctualityScoreMap.get(sid) ?? 100;
+    const conductScore = 100; // Default 100 conduct score
 
     const comprehensiveScore = Math.round(
       (examScore * weights.exam +
         attendanceScore * weights.attendance +
-        assignmentScore * weights.assignment) * 100
+        assignmentScore * weights.assignment +
+        conductScore * weights.conduct +
+        punctualityScore * weights.punctuality) * 100
     ) / 100;
 
-    results.push({
+    let performanceTier: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE' = 'AVERAGE';
+    if (comprehensiveScore >= 80) {
+      performanceTier = 'TOP_PERFORMER';
+    } else if (comprehensiveScore < 60) {
+      performanceTier = 'NEEDS_GUIDANCE';
+    }
+
+    rawResults.push({
       studentId: sid,
       classId,
       sectionId,
       examScore,
       attendanceScore,
       assignmentScore,
+      conductScore,
+      punctualityScore,
       comprehensiveScore,
+      classRank: 1,
+      sectionRank: 1,
+      performanceTier,
     });
   }
 
-  return results;
+  // 8. Assign Standard Competition Ranking (1st, 2nd, 2nd, 4th...) within Section
+  rawResults.sort((a, b) => b.comprehensiveScore - a.comprehensiveScore);
+
+  let currentRank = 1;
+  for (let i = 0; i < rawResults.length; i++) {
+    if (i > 0 && rawResults[i]!.comprehensiveScore < rawResults[i - 1]!.comprehensiveScore) {
+      currentRank = i + 1;
+    }
+    rawResults[i]!.sectionRank = currentRank;
+    rawResults[i]!.classRank = currentRank;
+  }
+
+  return rawResults;
 }
 
-// --- WLM Config CRUD ---
-
+/**
+ * WLM Config CRUD
+ */
 export async function getWlmConfig(schoolId: string) {
   const config = await WlmConfig.findOne({ schoolId }).lean();
   if (!config) {
-    // Return defaults
     return {
       schoolId,
-      examWeight: 0.50,
-      attendanceWeight: 0.30,
-      assignmentWeight: 0.20,
+      examWeight: 0.45,
+      attendanceWeight: 0.20,
+      assignmentWeight: 0.15,
+      conductWeight: 0.10,
+      punctualityWeight: 0.10,
     };
   }
   return config;
@@ -238,7 +316,13 @@ export async function getWlmConfig(schoolId: string) {
 
 export async function updateWlmConfig(
   schoolId: string,
-  data: { examWeight: number; attendanceWeight: number; assignmentWeight: number },
+  data: {
+    examWeight: number;
+    attendanceWeight: number;
+    assignmentWeight: number;
+    conductWeight?: number;
+    punctualityWeight?: number;
+  },
 ) {
   const config = await WlmConfig.findOneAndUpdate(
     { schoolId },
@@ -246,4 +330,319 @@ export async function updateWlmConfig(
     { new: true, upsert: true, runValidators: true },
   );
   return config;
+}
+
+/**
+ * Calculate Cumulative Academic Year Performance for a Student
+ * Aggregates all published major exams in an academic year.
+ */
+export async function calculateAnnualPerformance(
+  studentId: string,
+  schoolId: string,
+  academicYearId?: string,
+): Promise<IAnnualPerformanceSummary | null> {
+  let targetYearId = academicYearId;
+  if (!targetYearId) {
+    const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+    if (!activeYear) return null;
+    targetYearId = String(activeYear._id);
+  }
+
+  const academicYearDoc = await AcademicYear.findById(targetYearId).lean();
+  if (!academicYearDoc) return null;
+
+  // Find all published results for this school and academic year
+  const results = await ResultModel.find({
+    schoolId: new Types.ObjectId(schoolId),
+    academicYearId: new Types.ObjectId(targetYearId),
+    status: 'published',
+  })
+    .populate('examId', 'name startDate endDate isMajorExam annualContributionWeight')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  if (!results || results.length === 0) return null;
+
+  const terms: IAnnualPerformanceTerm[] = [];
+  let weightedSum = 0;
+  let totalContributionWeight = 0;
+
+  for (const r of results) {
+    if (!r.wlmScores || r.wlmScores.length === 0) continue;
+
+    const studentScore = r.wlmScores.find((s: any) => String(s.studentId) === studentId);
+    if (!studentScore) continue;
+
+    const examDoc = r.examId as any;
+    const isMajorExam = examDoc?.isMajorExam ?? true;
+    const contributionWeight = isMajorExam ? (examDoc?.annualContributionWeight ?? 1.0) : 0;
+
+    terms.push({
+      resultId: String(r._id),
+      examId: String(examDoc?._id || r.examId),
+      examName: examDoc?.name || r.name,
+      examDate: examDoc?.startDate || r.publishedAt || r.createdAt,
+      isMajorExam,
+      contributionWeight,
+      examScore: studentScore.examScore,
+      attendanceScore: studentScore.attendanceScore,
+      assignmentScore: studentScore.assignmentScore,
+      conductScore: studentScore.conductScore ?? 100,
+      punctualityScore: studentScore.punctualityScore ?? 100,
+      comprehensiveScore: studentScore.comprehensiveScore,
+      classRank: studentScore.classRank ?? 1,
+    });
+
+    if (isMajorExam && contributionWeight > 0) {
+      weightedSum += studentScore.comprehensiveScore * contributionWeight;
+      totalContributionWeight += contributionWeight;
+    }
+  }
+
+  if (terms.length === 0) return null;
+
+  const annualScore = totalContributionWeight > 0
+    ? Math.round((weightedSum / totalContributionWeight) * 100) / 100
+    : Math.round((terms.reduce((acc, t) => acc + t.comprehensiveScore, 0) / terms.length) * 100) / 100;
+
+  let performanceTier: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE' = 'AVERAGE';
+  if (annualScore >= 80) performanceTier = 'TOP_PERFORMER';
+  else if (annualScore < 60) performanceTier = 'NEEDS_GUIDANCE';
+
+  let scoreDelta = 0;
+  let trend: 'IMPROVING' | 'STABLE' | 'DECLINING' = 'STABLE';
+  if (terms.length >= 2) {
+    const latest = terms[terms.length - 1]!.comprehensiveScore;
+    const previous = terms[terms.length - 2]!.comprehensiveScore;
+    scoreDelta = Math.round((latest - previous) * 100) / 100;
+    if (scoreDelta > 1.5) trend = 'IMPROVING';
+    else if (scoreDelta < -1.5) trend = 'DECLINING';
+  }
+
+  return {
+    studentId,
+    academicYearId: String(targetYearId),
+    academicYearName: academicYearDoc.name,
+    annualComprehensiveScore: annualScore,
+    performanceTier,
+    terms,
+    totalMajorExamsCount: terms.filter(t => t.isMajorExam).length,
+    trend,
+    scoreDelta,
+  };
+}
+
+/**
+ * Get Class-Wise Rankings & Leaderboard across all students in a class & section.
+ */
+export async function getClassRankings(
+  schoolId: string,
+  classId: string,
+  sectionId?: string,
+  academicYearId?: string,
+  resultId?: string,
+) {
+  let targetYearId = academicYearId;
+  if (!targetYearId) {
+    const activeYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+    if (!activeYear) throw new Error('No active academic year found');
+    targetYearId = String(activeYear._id);
+  }
+
+  // Individual Exam Result Mode
+  if (resultId && resultId !== 'all_annual') {
+    const resultDoc = await ResultModel.findOne({
+      _id: new Types.ObjectId(resultId),
+      schoolId: new Types.ObjectId(schoolId),
+      status: 'published',
+    })
+      .populate('wlmScores.studentId', 'studentName admissionNumber contact')
+      .populate('wlmScores.classId', 'name')
+      .populate('wlmScores.sectionId', 'name')
+      .lean();
+
+    if (!resultDoc || !resultDoc.wlmScores || resultDoc.wlmScores.length === 0) {
+      return {
+        resultId,
+        resultName: resultDoc?.name || 'Exam Result',
+        summary: {
+          totalStudents: 0,
+          topPerformersCount: 0,
+          averagePerformersCount: 0,
+          needsGuidanceCount: 0,
+          classAverageScore: 0,
+        },
+        leaderboard: [],
+      };
+    }
+
+    const filteredScores = resultDoc.wlmScores.filter((w: any) => {
+      const classMatch = String((w.classId as any)?._id || w.classId) === classId;
+      const secMatch = !sectionId || sectionId === 'all' || String((w.sectionId as any)?._id || w.sectionId) === sectionId;
+      return classMatch && secMatch;
+    });
+
+    const studentItems = filteredScores.map((w: any) => {
+      const student = w.studentId as any;
+      const tier = w.performanceTier || (w.comprehensiveScore >= 80 ? 'TOP_PERFORMER' : w.comprehensiveScore < 60 ? 'NEEDS_GUIDANCE' : 'AVERAGE');
+
+      let bottleneck = 'None';
+      if (w.examScore < 60) bottleneck = 'Low Exam Mastery';
+      else if (w.attendanceScore < 75) bottleneck = 'Attendance Deficit';
+      else if (w.assignmentScore < 60) bottleneck = 'Missing Assignments';
+
+      return {
+        studentId: String(student?._id || w.studentId),
+        studentName: student?.studentName || 'Student',
+        admissionNumber: student?.admissionNumber || '',
+        rollNumber: null,
+        className: (w.classId as any)?.name || '',
+        sectionName: (w.sectionId as any)?.name || '',
+        contact: student?.contact || '',
+        examScore: w.examScore,
+        attendanceScore: w.attendanceScore,
+        assignmentScore: w.assignmentScore,
+        conductScore: w.conductScore ?? 100,
+        punctualityScore: w.punctualityScore ?? 100,
+        comprehensiveScore: w.comprehensiveScore,
+        classRank: w.classRank || w.sectionRank || 1,
+        performanceTier: tier,
+        bottleneck,
+      };
+    });
+
+    studentItems.sort((a, b) => (a.classRank || 1) - (b.classRank || 1));
+
+    let topCount = 0;
+    let avgCount = 0;
+    let guidanceCount = 0;
+    let totalScoreSum = 0;
+
+    for (const item of studentItems) {
+      totalScoreSum += item.comprehensiveScore;
+      if (item.performanceTier === 'TOP_PERFORMER') topCount++;
+      else if (item.performanceTier === 'NEEDS_GUIDANCE') guidanceCount++;
+      else avgCount++;
+    }
+
+    const classAverageScore = studentItems.length > 0
+      ? Math.round((totalScoreSum / studentItems.length) * 100) / 100
+      : 0;
+
+    return {
+      resultId,
+      resultName: resultDoc.name,
+      summary: {
+        totalStudents: studentItems.length,
+        topPerformersCount: topCount,
+        averagePerformersCount: avgCount,
+        needsGuidanceCount: guidanceCount,
+        classAverageScore,
+      },
+      leaderboard: studentItems,
+    };
+  }
+
+  // Cumulative Annual Mode
+  const enrollmentQuery: any = {
+    schoolId: new Types.ObjectId(schoolId),
+    academicYearId: new Types.ObjectId(targetYearId),
+    classId: new Types.ObjectId(classId),
+    studentEnrollmentStatus: 'active',
+  };
+  if (sectionId && sectionId !== 'all') {
+    enrollmentQuery.sectionId = new Types.ObjectId(sectionId);
+  }
+
+  const enrollments = await StudentEnrollment.find(enrollmentQuery)
+    .populate('studentId', 'studentName admissionNumber contact')
+    .populate('classId', 'name')
+    .populate('sectionId', 'name')
+    .sort({ rollNumber: 1 })
+    .lean();
+
+  if (enrollments.length === 0) {
+    return {
+      summary: {
+        totalStudents: 0,
+        topPerformersCount: 0,
+        averagePerformersCount: 0,
+        needsGuidanceCount: 0,
+        classAverageScore: 0,
+      },
+      leaderboard: [],
+    };
+  }
+
+  const studentItems: any[] = [];
+  let totalScoreSum = 0;
+
+  for (const enr of enrollments) {
+    const student = enr.studentId as any;
+    if (!student) continue;
+
+    const sid = String(student._id);
+    const annualPerf = await calculateAnnualPerformance(sid, schoolId, targetYearId);
+    const score = annualPerf?.annualComprehensiveScore ?? 0;
+    const tier = annualPerf?.performanceTier ?? (score >= 80 ? 'TOP_PERFORMER' : score < 60 ? 'NEEDS_GUIDANCE' : 'AVERAGE');
+
+    totalScoreSum += score;
+
+    let bottleneck = 'None';
+    if (annualPerf && annualPerf.terms.length > 0) {
+      const lastTerm = annualPerf.terms[annualPerf.terms.length - 1]!;
+      if (lastTerm.examScore < 60) bottleneck = 'Low Exam Mastery';
+      else if (lastTerm.attendanceScore < 75) bottleneck = 'Attendance Deficit';
+      else if (lastTerm.assignmentScore < 60) bottleneck = 'Missing Assignments';
+    }
+
+    studentItems.push({
+      studentId: sid,
+      studentName: student.studentName,
+      admissionNumber: student.admissionNumber,
+      rollNumber: enr.rollNumber || null,
+      className: (enr.classId as any)?.name || '',
+      sectionName: (enr.sectionId as any)?.name || '',
+      contact: student.contact || '',
+      comprehensiveScore: score,
+      performanceTier: tier,
+      termsCount: annualPerf?.terms.length ?? 0,
+      trend: annualPerf?.trend ?? 'STABLE',
+      scoreDelta: annualPerf?.scoreDelta ?? 0,
+      bottleneck,
+    });
+  }
+
+  studentItems.sort((a, b) => b.comprehensiveScore - a.comprehensiveScore);
+
+  let currentRank = 1;
+  let topCount = 0;
+  let avgCount = 0;
+  let guidanceCount = 0;
+
+  for (let i = 0; i < studentItems.length; i++) {
+    if (i > 0 && studentItems[i].comprehensiveScore < studentItems[i - 1].comprehensiveScore) {
+      currentRank = i + 1;
+    }
+    studentItems[i].classRank = currentRank;
+
+    if (studentItems[i].performanceTier === 'TOP_PERFORMER') topCount++;
+    else if (studentItems[i].performanceTier === 'NEEDS_GUIDANCE') guidanceCount++;
+    else avgCount++;
+  }
+
+  const classAverageScore = studentItems.length > 0
+    ? Math.round((totalScoreSum / studentItems.length) * 100) / 100
+    : 0;
+
+  return {
+    summary: {
+      totalStudents: studentItems.length,
+      topPerformersCount: topCount,
+      averagePerformersCount: avgCount,
+      needsGuidanceCount: guidanceCount,
+      classAverageScore,
+    },
+    leaderboard: studentItems,
+  };
 }

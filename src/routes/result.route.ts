@@ -18,9 +18,12 @@ import {
   getStudentResultsForAdmin,
   getStudentResultDetailsForAdmin,
 } from '../controllers/result.controller';
-import { getWlmScores, recalculateWlm } from '../controllers/wlm.controller';
+import { getWlmScores, recalculateWlm, getAnnualPerformance, getClassRankings } from '../controllers/wlm.controller';
 
 const resultRouter = Router();
+
+// --- Class Rankings Leaderboard View (Admin & Teacher) ---
+resultRouter.get('/class-rankings', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.TEACHER]), getClassRankings);
 
 // --- Result CRUD (Admin only) ---
 resultRouter.post('/', authenticate, authorize([Role.OADMIN, Role.ADMIN]), createResult);
@@ -33,6 +36,7 @@ resultRouter.get('/my-results/:resultId', authenticate, authorize([Role.STUDENT,
 // --- Admin-specific Student Result Views ---
 resultRouter.get('/admin/student/:studentId/results', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentResultsForAdmin);
 resultRouter.get('/admin/student/:studentId/results/:resultId', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getStudentResultDetailsForAdmin);
+resultRouter.get('/student/:studentId/annual-wlm', authenticate, authorize([Role.OADMIN, Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.PARENT]), getAnnualPerformance);
 
 
 resultRouter.get('/:id', authenticate, authorize([Role.OADMIN, Role.ADMIN]), getResultById);
