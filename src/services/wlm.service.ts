@@ -449,8 +449,8 @@ export async function getClassRankings(
     targetYearId = String(activeYear._id);
   }
 
-  // Individual Exam Result Mode
-  if (resultId && resultId !== 'all_annual') {
+  // Individual Exam Result Mode (if specific resultId passed)
+  if (resultId) {
     const resultDoc = await ResultModel.findOne({
       _id: new Types.ObjectId(resultId),
       schoolId: new Types.ObjectId(schoolId),

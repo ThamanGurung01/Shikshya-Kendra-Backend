@@ -16,7 +16,10 @@ export const ExamSchema = z.object({
     endTime: z.string(),
   })).optional(),
   status: z.enum(['draft', 'upcoming', 'active', 'ended']).optional(),
-  gradingSystem: z.enum(['gpa', 'percentage']).optional(),
+  gradingSystem: z.enum(['gpa', 'percentage']).default('gpa'),
+  examType: z.enum(['terminal', 'formative', 'practice']).optional(),
+  isMajorExam: z.boolean().optional(),
+  annualContributionWeight: z.number().optional(),
   examConfiguration: z.array(z.object({
     classId: z.string().min(1, 'Class ID is required'),
     subjects: z.array(z.object({

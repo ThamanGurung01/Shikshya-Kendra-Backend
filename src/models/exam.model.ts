@@ -27,8 +27,8 @@ export interface IExam {
   note?: string;
   classTimes?: { classId: Types.ObjectId; startTime: string; endTime: string }[];
   status: 'draft' | 'upcoming' | 'active' | 'ended';
-  gradingSystem?: 'gpa' | 'percentage';
-  examType?: 'terminal' | 'unit_test' | 'monthly' | 'quiz';
+  gradingSystem: 'gpa' | 'percentage';
+  examType?: 'terminal' | 'formative' | 'practice';
   isMajorExam?: boolean;
   annualContributionWeight?: number;
   examConfiguration?: IExamClassConfig[];
@@ -63,10 +63,12 @@ const examSchema = new Schema<IExam>(
     gradingSystem: {
       type: String,
       enum: ['gpa', 'percentage'],
+      default: 'gpa',
+      required: true,
     },
     examType: {
       type: String,
-      enum: ['terminal', 'unit_test', 'monthly', 'quiz'],
+      enum: ['terminal', 'formative', 'practice'],
       default: 'terminal',
     },
     isMajorExam: {
