@@ -28,6 +28,9 @@ async function main() {
   const { seedAccount } = await import("./account.seeder");
   await seedAccount();
 
+  const { seedAttendance } = await import("./attendance.seeder");
+  await seedAttendance();
+
   console.log("=== All seeders completed successfully ===");
 
   await closeDB();

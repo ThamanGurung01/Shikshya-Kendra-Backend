@@ -18,3 +18,14 @@ export const scanQrAttendanceSchema = z.object({
   qrData: z.string().min(1, "QR data is required"),
   date: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), "Valid date format required"),
 });
+
+export const getAttendanceAnalyticsSchema = z.object({
+  classId: z.string().optional(),
+  sectionId: z.string().optional(),
+  academicYearId: z.string().optional(),
+  windowDays: z.coerce.number().min(7).max(180).default(30),
+  threshold: z.coerce.number().min(50).max(95).default(75),
+  riskFilter: z.enum(['ALL', 'CRITICAL', 'WARNING', 'HEALTHY']).default('ALL'),
+  isClassTeacherMode: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false)
+});
+

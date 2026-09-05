@@ -6,6 +6,7 @@ import { ClassRoutine } from "../models/class-routine.model";
 import { ApiError } from "../utils/error.util";
 import { Teacher } from "../models/teacher.model";
 import { Student } from "../models/student.model";
+import { analyzeStudentAttendance } from "../utils/sliding-window.util";
 
 // Helper: Attendance auth check
 export async function isAuthorizedForAttendance(
@@ -383,3 +384,196 @@ export const scanQrAttendanceService = async (
       : `Successfully marked ${student.studentName} Present!`
   };
 };
+
+export const getAttendanceAnalyticsService = async (
+  schoolId: string,
+  userId: string,
+  role: string,
+  classId?: string,
+  sectionId?: string,
+  academicYearId?: string,
+  windowDays: number = 30,
+  threshold: number = 75,
+  riskFilter: string = 'ALL',
+  isClassTeacherMode: boolean = false
+) => {
+  let targetYearId = academicYearId;
+  if (!targetYearId) {
+    const currentYear = await AcademicYear.findOne({ schoolId, isCurrent: true }).lean();
+    if (!currentYear) throw new ApiError(400, "Active academic year not found");
+    targetYearId = currentYear._id.toString();
+  }
+
+  let effectiveClassId = classId;
+  let effectiveSectionId = sectionId;
+  let assignedClassName = "";
+  let assignedSectionName = "";
+
+  // If request is from teacher or class teacher mode is active, auto-scope to teacher's assigned class
+  if (role === 'teacher' || isClassTeacherMode) {
+    const assignment = await getAssignedClassService(schoolId, userId, role);
+    if (assignment.assigned) {
+      effectiveClassId = assignment.classId;
+      effectiveSectionId = assignment.sectionId;
+      assignedClassName = assignment.className;
+      assignedSectionName = assignment.sectionName;
+    }
+  }
+
+  // 1. Fetch active enrollments matching criteria
+  const queryFilter: any = {
+    schoolId,
+    academicYearId: targetYearId,
+    studentEnrollmentStatus: "active"
+  };
+  if (effectiveClassId) queryFilter.classId = effectiveClassId;
+  if (effectiveSectionId) queryFilter.sectionId = effectiveSectionId;
+
+  const enrollments = await StudentEnrollment.find(queryFilter)
+    .populate("studentId", "studentName admissionNumber contact gender profileImage")
+    .populate("classId", "name")
+    .populate("sectionId", "name")
+    .sort({ rollNumber: 1 })
+    .lean();
+
+  if (enrollments.length === 0) {
+    return {
+      summary: {
+        totalStudents: 0,
+        criticalCount: 0,
+        warningCount: 0,
+        healthyCount: 0,
+        activeStreaksCount: 0,
+        average30DayRate: 100,
+        assignedClassName,
+        assignedSectionName
+      },
+      students: [],
+      classTimeline: []
+    };
+  }
+
+  // 2. Fetch historical attendance documents
+  const attendanceDocsQuery: any = { schoolId, academicYearId: targetYearId };
+  if (effectiveClassId) attendanceDocsQuery.classId = effectiveClassId;
+  if (effectiveSectionId) attendanceDocsQuery.sectionId = effectiveSectionId;
+
+  const attendanceDocs = await Attendance.find(attendanceDocsQuery)
+    .sort({ date: 1 })
+    .lean();
+
+  // 3. Map attendance history by studentId
+  const studentAttendanceMap = new Map<string, { date: Date; status: any; remarks?: string | undefined }[]>();
+  
+  attendanceDocs.forEach((doc) => {
+    doc.records.forEach((rec) => {
+      const sId = rec.studentId.toString();
+      if (!studentAttendanceMap.has(sId)) {
+        studentAttendanceMap.set(sId, []);
+      }
+      studentAttendanceMap.get(sId)!.push({
+        date: doc.date,
+        status: rec.status,
+        remarks: rec.remarks
+      });
+    });
+  });
+
+  // 4. Run Sliding Window algorithm per student
+  const minSampleDays = 7;
+  let criticalCount = 0;
+  let warningCount = 0;
+  let healthyCount = 0;
+  let activeStreaksCount = 0;
+
+  const studentResults = enrollments.map((env: any) => {
+    const student = env.studentId;
+    const studentIdStr = student ? student._id.toString() : env._id.toString();
+    const records = studentAttendanceMap.get(studentIdStr) || [];
+
+    const analysis = analyzeStudentAttendance(studentIdStr, records, windowDays, threshold, minSampleDays);
+
+    if (analysis.riskLevel === 'CRITICAL') criticalCount++;
+    else if (analysis.riskLevel === 'WARNING') warningCount++;
+    else healthyCount++;
+
+    if (analysis.streakInfo.isStreakActive) activeStreaksCount++;
+
+    return {
+      ...analysis,
+      studentName: student?.studentName || "Unknown Student",
+      admissionNumber: student?.admissionNumber || "N/A",
+      contact: student?.contact || "",
+      gender: student?.gender || "",
+      profileImage: student?.profileImage || "",
+      className: env.classId?.name || "",
+      sectionName: env.sectionId?.name || "",
+      rollNumber: env.rollNumber,
+    };
+  });
+
+
+  // 5. Filter by risk level if requested
+  const filteredStudents = riskFilter === 'ALL'
+    ? studentResults
+    : studentResults.filter(s => s.riskLevel === riskFilter);
+
+  // 6. Aggregate overall class rolling timeline curve
+  const dateMap = new Map<string, { totalPresent: number; totalStudents: number }>();
+  attendanceDocs.forEach((doc) => {
+    const dateStr = new Date(doc.date).toISOString().split('T')[0]!;
+    let presentInDoc = 0;
+    doc.records.forEach((r) => {
+      if (r.status === 'PRESENT' || r.status === 'LATE') presentInDoc += 1;
+      else if (r.status === 'HALF_DAY') presentInDoc += 0.5;
+    });
+    dateMap.set(dateStr, {
+      totalPresent: presentInDoc,
+      totalStudents: doc.records.length
+    });
+  });
+
+  const sortedDates = Array.from(dateMap.keys()).sort();
+  const totalDaysRecorded = sortedDates.length;
+  const hasSufficientData = totalDaysRecorded >= minSampleDays;
+  const warmupMessage = !hasSufficientData
+    ? `Attendance tracking is in the warmup phase (${totalDaysRecorded} of ${minSampleDays} required days logged). Rolling 30-day percentage deficit alerts will be enabled after ${minSampleDays} days.`
+    : undefined;
+
+  const classTimeline = sortedDates.map((dateStr) => {
+    const item = dateMap.get(dateStr)!;
+    const dayRate = item.totalStudents > 0 ? Math.round((item.totalPresent / item.totalStudents) * 1000) / 10 : 100;
+    return {
+      date: dateStr,
+      dayRate,
+      threshold
+    };
+  });
+
+  const stageAlerts = studentResults.flatMap(s => s.stageAlerts);
+
+  return {
+    summary: {
+      totalStudents: studentResults.length,
+      criticalCount,
+      warningCount,
+      healthyCount,
+      activeStreaksCount,
+      average30DayRate: studentResults.length > 0 
+        ? Math.round((studentResults.reduce((acc, s) => acc + s.currentRolling30DayRate, 0) / studentResults.length) * 10) / 10 
+        : 100,
+      assignedClassName,
+      assignedSectionName,
+      stageAlertsCount: stageAlerts.length,
+      totalDaysRecorded,
+      minSampleDays,
+      hasSufficientData,
+      warmupMessage
+    },
+    stageAlerts,
+    students: filteredStudents,
+    classTimeline
+  };
+};
+
+
