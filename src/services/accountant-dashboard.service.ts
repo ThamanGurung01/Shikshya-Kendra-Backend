@@ -1,4 +1,5 @@
 import { Income } from "../models/income.model";
+import { holtDoubleSmoothing } from "../utils/exponential-smoothing.util";
 import { Expense } from "../models/expense.model";
 import { FeeInvoice } from "../models/fee-invoice.model";
 import { FeeStructure } from "../models/fee-structure.model";
@@ -358,4 +359,94 @@ export const getFinancialStatementReport = async (
   };
 };
 
+export const getFinancialForecast = async (
+  schoolId: string,
+  historyMonths: number = 12,
+  forecastMonths: number = 3
+) => {
+  const schoolObjId = new Types.ObjectId(schoolId);
 
+  const monthLabels: string[] = [];
+  const monthStartDates: Date[] = [];
+
+  for (let i = historyMonths - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    d.setMonth(d.getMonth() - i);
+    monthStartDates.push(new Date(d));
+    monthLabels.push(d.toLocaleString("en-US", { month: "short", year: "numeric" }));
+  }
+
+  const startBoundary = monthStartDates[0]!;
+
+  const incomeAgg = await Income.aggregate([
+    { $match: { schoolId: schoolObjId, deletedAt: null, date: { $gte: startBoundary } } },
+    { $group: { _id: { year: { $year: "$date" }, month: { $month: "$date" } }, total: { $sum: "$netAmount" } } },
+  ]);
+
+  const expenseAgg = await Expense.aggregate([
+    { $match: { schoolId: schoolObjId, deletedAt: null, date: { $gte: startBoundary } } },
+    { $group: { _id: { year: { $year: "$date" }, month: { $month: "$date" } }, total: { $sum: "$netAmount" } } },
+  ]);
+
+  const incomeMap = new Map<string, number>();
+  incomeAgg.forEach((r: any) => incomeMap.set(`${r._id.year}-${r._id.month}`, r.total));
+
+  const expenseMap = new Map<string, number>();
+  expenseAgg.forEach((r: any) => expenseMap.set(`${r._id.year}-${r._id.month}`, r.total));
+
+  const incomeSeries: number[] = [];
+  const expenseSeries: number[] = [];
+
+  monthStartDates.forEach((d) => {
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    incomeSeries.push(incomeMap.get(key) ?? 0);
+    expenseSeries.push(expenseMap.get(key) ?? 0);
+  });
+
+  const incomeResult  = holtDoubleSmoothing(incomeSeries,  forecastMonths);
+  const expenseResult = holtDoubleSmoothing(expenseSeries, forecastMonths);
+
+  const forecastLabels: string[] = [];
+  for (let i = 1; i <= forecastMonths; i++) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + i);
+    forecastLabels.push(d.toLocaleString("en-US", { month: "short", year: "numeric" }));
+  }
+
+  const allLabels = [...monthLabels, ...forecastLabels];
+
+  const chartData = allLabels.map((label, idx) => {
+    const ip = incomeResult.points[idx];
+    const ep = expenseResult.points[idx];
+    return {
+      month: label,
+      isForecast: ip?.isForecast ?? false,
+      income: {
+        actual:   ip?.isForecast ? null : (ip?.actual ?? null),
+        forecast: ip?.forecast ?? null,
+        upper:    ip?.upper ?? null,
+        lower:    ip?.lower ?? null,
+      },
+      expense: {
+        actual:   ep?.isForecast ? null : (ep?.actual ?? null),
+        forecast: ep?.forecast ?? null,
+        upper:    ep?.upper ?? null,
+        lower:    ep?.lower ?? null,
+      },
+      netForecast: (ip?.forecast ?? 0) - (ep?.forecast ?? 0),
+    };
+  });
+
+  return {
+    historyMonths,
+    forecastMonths,
+    model: {
+      income:  { alpha: incomeResult.alpha,  beta: incomeResult.beta,  mae: incomeResult.mae },
+      expense: { alpha: expenseResult.alpha, beta: expenseResult.beta, mae: expenseResult.mae },
+    },
+    chartData,
+  };
+};

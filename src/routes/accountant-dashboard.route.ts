@@ -6,6 +6,7 @@ import {
   getDashboardMetrics,
   getDashboardCharts,
   getFinancialStatementReport,
+  getFinancialForecast,
 } from "../controllers/accountant-dashboard.controller";
 
 const accountantDashboardRouter = Router();
@@ -31,4 +32,12 @@ accountantDashboardRouter.get(
   getFinancialStatementReport
 );
 
+accountantDashboardRouter.get(
+  "/forecast",
+  authenticate,
+  authorize([Role.ADMIN, Role.OADMIN, Role.ACCOUNTANT]),
+  getFinancialForecast
+);
+
 export default accountantDashboardRouter;
+
