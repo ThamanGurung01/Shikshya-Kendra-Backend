@@ -67,8 +67,8 @@ export async function calculateWlmScores(
   // 1. Load weights (fall back to defaults if no config)
   const config = await WlmConfig.findOne({ schoolId }).lean();
   const weights = {
-    exam: config?.examWeight ?? 0.60,
-    attendance: config?.attendanceWeight ?? 0.25,
+    exam: config?.examWeight ?? 0.75,
+    attendance: config?.attendanceWeight ?? 0.10,
     assignment: config?.assignmentWeight ?? 0.15,
     conduct: config?.conductWeight ?? 0,
     punctuality: config?.punctualityWeight ?? 0,
@@ -243,6 +243,32 @@ export async function calculateWlmScores(
 
   // 7. Calculate Comprehensive Score for each student
   const rawResults: IWlmBreakdown[] = [];
+
+  // Dynamic weight scaling if attendance or assignments are unrecorded
+  const hasAttendance = attendanceDocs.length > 0;
+  const hasAssignments = assignments.length > 0;
+
+  let effectiveExamWeight = weights.exam;
+  let effectiveAttendanceWeight = hasAttendance ? weights.attendance : 0;
+  let effectiveAssignmentWeight = hasAssignments ? weights.assignment : 0;
+  let effectiveConductWeight = weights.conduct;
+  let effectivePunctualityWeight = hasAttendance ? weights.punctuality : 0;
+
+  const activeWeightSum =
+    effectiveExamWeight +
+    effectiveAttendanceWeight +
+    effectiveAssignmentWeight +
+    effectiveConductWeight +
+    effectivePunctualityWeight;
+
+  if (activeWeightSum > 0) {
+    effectiveExamWeight /= activeWeightSum;
+    effectiveAttendanceWeight /= activeWeightSum;
+    effectiveAssignmentWeight /= activeWeightSum;
+    effectiveConductWeight /= activeWeightSum;
+    effectivePunctualityWeight /= activeWeightSum;
+  }
+
   for (const sid of studentIds) {
     const examScore = examScoreMap.get(sid) ?? 0;
     const attendanceScore = attendanceScoreMap.get(sid) ?? 0;
@@ -251,11 +277,11 @@ export async function calculateWlmScores(
     const conductScore = 100; // Default 100 conduct score
 
     const comprehensiveScore = Math.round(
-      (examScore * weights.exam +
-        attendanceScore * weights.attendance +
-        assignmentScore * weights.assignment +
-        conductScore * weights.conduct +
-        punctualityScore * weights.punctuality) * 100
+      (examScore * effectiveExamWeight +
+        attendanceScore * effectiveAttendanceWeight +
+        assignmentScore * effectiveAssignmentWeight +
+        conductScore * effectiveConductWeight +
+        punctualityScore * effectivePunctualityWeight) * 100
     ) / 100;
 
     let performanceTier: 'TOP_PERFORMER' | 'AVERAGE' | 'NEEDS_GUIDANCE' = 'AVERAGE';
@@ -304,8 +330,8 @@ export async function getWlmConfig(schoolId: string) {
   if (!config) {
     return {
       schoolId,
-      examWeight: 0.60,
-      attendanceWeight: 0.25,
+      examWeight: 0.75,
+      attendanceWeight: 0.10,
       assignmentWeight: 0.15,
       conductWeight: 0,
       punctualityWeight: 0,

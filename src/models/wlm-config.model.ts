@@ -14,8 +14,8 @@ export interface IWlmConfig extends Document {
 const wlmConfigSchema = new Schema<IWlmConfig>(
   {
     schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true, unique: true },
-    examWeight: { type: Number, default: 0.60, min: 0, max: 1 },
-    attendanceWeight: { type: Number, default: 0.25, min: 0, max: 1 },
+    examWeight: { type: Number, default: 0.75, min: 0, max: 1 },
+    attendanceWeight: { type: Number, default: 0.10, min: 0, max: 1 },
     assignmentWeight: { type: Number, default: 0.15, min: 0, max: 1 },
     conductWeight: { type: Number, default: 0, min: 0, max: 1 },
     punctualityWeight: { type: Number, default: 0, min: 0, max: 1 },
