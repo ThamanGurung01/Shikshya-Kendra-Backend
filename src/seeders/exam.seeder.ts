@@ -105,6 +105,9 @@ export const seedExams = async () => {
       endTime: "01:00 PM",
       status: "ended",
       gradingSystem: "percentage",
+      examType: "terminal",
+      isMajorExam: true,
+      annualContributionWeight: 1.0,
       examConfiguration,
       classTimes
     }).save();
@@ -143,7 +146,9 @@ export const seedExams = async () => {
     }).save();
     console.log(`Result created with ID: ${result._id}`);
 
-    console.log("Creating Grade Assignments and Histories...");
+    const subjectMap = new Map<string, any>(subjects.map(s => [s._id.toString(), s]));
+
+    console.log("Creating Grade Assignments and Histories with Performance Tiers...");
     for (const cls of classes) {
       const sections = await Section.find({ classId: cls._id });
       for (const section of sections) {
@@ -152,30 +157,114 @@ export const seedExams = async () => {
           academicYearId: academicYear._id, 
           classId: cls._id,
           sectionId: section._id 
-        });
+        }).sort({ rollNumber: 1 });
 
         const classConfig = examConfiguration.find(ec => ec.classId.toString() === cls._id.toString());
         if (!classConfig) continue;
 
         let skippedNoMapping = 0;
-        for (const subConfig of classConfig.subjects) {
+        for (let subIdx = 0; subIdx < classConfig.subjects.length; subIdx++) {
+          const subConfig = classConfig.subjects[subIdx]!;
+          const subjectObj = subjectMap.get(subConfig.subjectId.toString());
+          const subjectName = subjectObj?.name || "";
+          const isCoreSubject = ["Mathematics", "Science", "Optional Mathematics", "English"].includes(subjectName);
+
           // Resolve the teacher via in-memory map (keyed by classId|sectionId|subjectId)
           const mappingKey = `${cls._id}|${section._id}|${subConfig.subjectId}`;
           const mappedTeacherId = mappingTeacherMap.get(mappingKey);
           if (!mappedTeacherId) skippedNoMapping++;
           const assignmentTeacherId = mappedTeacherId ?? fallbackTeacher._id.toString();
 
-          const entries = enrollments.map(enroll => {
-            const theoryMarks = Math.floor(Math.random() * (75 - 30 + 1)) + 30; // 30 to 75
-            const practicalMarks = Math.floor(Math.random() * (25 - 10 + 1)) + 10; // 10 to 25
+          const entries = enrollments.map((enroll, enrollIndex) => {
+            let theoryMarks: number | null = null;
+            let practicalMarks: number | null = null;
+            let totalMarks: number | null = null;
+            let isAbsent = false;
+            let remarks = "Good";
+
+            if (enrollIndex === 0) {
+              // Roll 1: Top Performer (90-98%)
+              theoryMarks = Math.floor(Math.random() * 8) + 67; // 67 to 74
+              practicalMarks = Math.floor(Math.random() * 3) + 23; // 23 to 25
+              totalMarks = theoryMarks + practicalMarks;
+              isAbsent = false;
+              remarks = "Outstanding academic performance";
+            } else if (enrollIndex === 1) {
+              // Roll 2: Good / Above Average Performer (72-85%)
+              theoryMarks = Math.floor(Math.random() * 11) + 53; // 53 to 63
+              practicalMarks = Math.floor(Math.random() * 5) + 18; // 18 to 22
+              totalMarks = theoryMarks + practicalMarks;
+              isAbsent = false;
+              remarks = "Good performance, solid conceptual grasp";
+            } else if (enrollIndex === 2) {
+              // Roll 3: Mid Performer / Average (56-69%)
+              theoryMarks = Math.floor(Math.random() * 10) + 42; // 42 to 51
+              practicalMarks = Math.floor(Math.random() * 5) + 14; // 14 to 18
+              totalMarks = theoryMarks + practicalMarks;
+              isAbsent = false;
+              remarks = "Average score, scope for improvement in theory";
+            } else if (enrollIndex === 3) {
+              // Roll 4: Failing / Struggling Student (Fails in core subjects)
+              if (isCoreSubject) {
+                theoryMarks = Math.floor(Math.random() * 12) + 16; // 16 to 27 (Below theory pass mark 30!)
+                practicalMarks = Math.floor(Math.random() * 5) + 8; // 8 to 12
+                totalMarks = theoryMarks + practicalMarks; // 24 to 39 (Failing grade)
+                isAbsent = false;
+                remarks = "Failed theory pass mark. Requires academic support";
+              } else {
+                theoryMarks = Math.floor(Math.random() * 5) + 31; // 31 to 35 (Barely passed)
+                practicalMarks = Math.floor(Math.random() * 4) + 10; // 10 to 13
+                totalMarks = theoryMarks + practicalMarks;
+                isAbsent = false;
+                remarks = "Needs focused improvement";
+              }
+            } else if (enrollIndex === 4) {
+              // Roll 5: Borderline Pass / Occasional Exam Absentee
+              if (subIdx === 2) {
+                // Absent for 3rd subject exam
+                isAbsent = true;
+                theoryMarks = null;
+                practicalMarks = null;
+                totalMarks = null;
+                remarks = "Absent for examination";
+              } else {
+                theoryMarks = Math.floor(Math.random() * 7) + 30; // 30 to 36 (Barely pass)
+                practicalMarks = Math.floor(Math.random() * 4) + 10; // 10 to 13
+                totalMarks = theoryMarks + practicalMarks;
+                isAbsent = false;
+                remarks = "Borderline pass mark";
+              }
+            } else {
+              // Fallback for roll numbers 6+
+              if (enrollIndex % 3 === 0) {
+                theoryMarks = Math.floor(Math.random() * 10) + 60;
+                practicalMarks = Math.floor(Math.random() * 5) + 20;
+                totalMarks = theoryMarks + practicalMarks;
+                isAbsent = false;
+                remarks = "Good performance";
+              } else if (enrollIndex % 3 === 1) {
+                theoryMarks = Math.floor(Math.random() * 10) + 40;
+                practicalMarks = Math.floor(Math.random() * 5) + 15;
+                totalMarks = theoryMarks + practicalMarks;
+                isAbsent = false;
+                remarks = "Average performance";
+              } else {
+                theoryMarks = Math.floor(Math.random() * 10) + 22;
+                practicalMarks = Math.floor(Math.random() * 5) + 9;
+                totalMarks = theoryMarks + practicalMarks;
+                isAbsent = false;
+                remarks = "Needs academic support";
+              }
+            }
+
             return {
               studentId: enroll.studentId,
               enrollmentId: enroll._id,
               theoryMarks,
               practicalMarks,
-              totalMarks: theoryMarks + practicalMarks,
-              isAbsent: false,
-              remarks: "Good",
+              totalMarks,
+              isAbsent,
+              remarks,
             };
           });
 

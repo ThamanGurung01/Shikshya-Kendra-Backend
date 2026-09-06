@@ -135,14 +135,14 @@ const seedAccount = async () => {
 
     // 4. Purge existing Account Section collections for clean idempotent seed
     console.log("\nPurging existing account section records...");
-    await FeeHead.deleteMany({ schoolId });
-    await FeeStructure.deleteMany({ schoolId });
-    await StudentFeeConfig.deleteMany({ schoolId });
-    await FeeInvoice.deleteMany({ schoolId });
-    await Income.deleteMany({ schoolId });
-    await Expense.deleteMany({ schoolId });
-    await StaffSalaryConfig.deleteMany({ schoolId });
-    await Payroll.deleteMany({ schoolId });
+    await FeeHead.deleteMany({});
+    await FeeStructure.deleteMany({});
+    await StudentFeeConfig.deleteMany({});
+    await FeeInvoice.deleteMany({});
+    await Income.deleteMany({});
+    await Expense.deleteMany({});
+    await StaffSalaryConfig.deleteMany({});
+    await Payroll.deleteMany({});
     console.log("Account collections purged successfully.");
 
     // 5. Fetch Classes and Enrollments
@@ -258,16 +258,16 @@ const seedAccount = async () => {
     // 7. Seed Class Fee Structures (Class 1 to 10)
     console.log("\n2. Seeding Class Monthly Fee Structures...");
     const classBaseFees: Record<number, number> = {
-      1: 3200,
-      2: 3500,
-      3: 3800,
-      4: 4200,
-      5: 4500,
-      6: 5000,
-      7: 5500,
-      8: 6000,
-      9: 6800,
-      10: 7500,
+      1: 8500,
+      2: 8800,
+      3: 9200,
+      4: 9800,
+      5: 10500,
+      6: 11500,
+      7: 12500,
+      8: 13500,
+      9: 14500,
+      10: 15500,
     };
 
     const feeStructures: any[] = [];
@@ -1061,6 +1061,62 @@ const seedAccount = async () => {
       }).save();
     }
     console.log(`Created ${generalExpenses.length} operating expenses.`);
+
+    // 14. Seed 12-Month Historical Financial Data for Budget Prediction & Financial Forecast
+    console.log("\n9. Seeding 12-Month Historical Financial Data for Financial Forecast & Budget Predictions...");
+    let historicalIncomeCount = 0;
+    let historicalExpenseCount = 0;
+
+    for (let mOffset = 11; mOffset >= 1; mOffset--) {
+      const pastDate = new Date();
+      pastDate.setDate(15);
+      pastDate.setMonth(pastDate.getMonth() - mOffset);
+      pastDate.setHours(10, 0, 0, 0);
+
+      const year = pastDate.getFullYear();
+      const monthStr = pastDate.toLocaleString("en-US", { month: "short" });
+
+      // Monthly Fee & Institutional Income (Gradual growth trajectory: NRs. 1.85M to 2.15M/mo)
+      const monthlyIncomeAmount = 1850000 + (11 - mOffset) * 28000 + (mOffset % 3 === 0 ? 45000 : 0);
+      const incVoucher = `INC-${year}-${String(incomeSeq++).padStart(4, "0")}`;
+
+      await new Income({
+        voucherNumber: incVoucher,
+        schoolId,
+        category: "Student Fee",
+        title: `Consolidated Fee Collections & Institutional Revenue - ${monthStr} ${year}`,
+        amount: monthlyIncomeAmount,
+        discountAmount: 0,
+        netAmount: monthlyIncomeAmount,
+        paymentMethod: "bank_transfer",
+        date: pastDate,
+        description: `Monthly tuition, transport, and facility revenue for ${monthStr} ${year}`,
+        createdById: accountantUser._id,
+        deletedAt: null,
+      }).save();
+      historicalIncomeCount++;
+
+      // Monthly Payroll & Facility Operational Expense (Controlled stable expenditure: NRs. 1.28M to 1.42M/mo)
+      const monthlyExpenseAmount = 1280000 + (11 - mOffset) * 12000 + (mOffset % 4 === 0 ? 35000 : 0);
+      const expVoucher = `EXP-${year}-${String(expenseSeq++).padStart(4, "0")}`;
+
+      await new Expense({
+        voucherNumber: expVoucher,
+        schoolId,
+        category: "Salary",
+        title: `Consolidated Monthly Payroll & Operations Disbursed - ${monthStr} ${year}`,
+        amount: monthlyExpenseAmount,
+        discountAmount: 0,
+        netAmount: monthlyExpenseAmount,
+        paymentMethod: "bank_transfer",
+        date: pastDate,
+        description: `Staff salary disbursements & operational utility expenses for ${monthStr} ${year}`,
+        createdById: accountantUser._id,
+        deletedAt: null,
+      }).save();
+      historicalExpenseCount++;
+    }
+    console.log(`Seeded 12-month historical financial dataset (${historicalIncomeCount} income logs, ${historicalExpenseCount} expense logs).`);
 
     console.log("\n=========================================");
     console.log("Account Section Seeding Completed Successfully!");

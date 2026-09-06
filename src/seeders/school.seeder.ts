@@ -225,12 +225,282 @@ const seedSchool = async () => {
     }
     console.log(`${classes.length} classes and ${sections.length} sections created.`);
 
+    // Predefined Realistic Nepali Families (20 Families)
+    const families = [
+      {
+        surname: "Sharma",
+        fatherName: "Ram Prasad Sharma",
+        fatherPhone: "9861011111",
+        motherName: "Sita Devi Sharma",
+        motherPhone: "9862011111",
+        guardianName: "Ram Prasad Sharma",
+        guardianPhone: "9861011111",
+        relation: "Father",
+        email: "ram.sharma@shikshyakendra.edu.np",
+        userName: "Ram Prasad Sharma",
+      },
+      {
+        surname: "Shrestha",
+        fatherName: "Bikash Shrestha",
+        fatherPhone: "9861022222",
+        motherName: "Sunita Shrestha",
+        motherPhone: "9862022222",
+        guardianName: "Bikash Shrestha",
+        guardianPhone: "9861022222",
+        relation: "Father",
+        email: "bikash.shrestha@shikshyakendra.edu.np",
+        userName: "Bikash Shrestha",
+      },
+      {
+        surname: "Adhikari",
+        fatherName: "Rajesh Adhikari",
+        fatherPhone: "9861033333",
+        motherName: "Gita Adhikari",
+        motherPhone: "9862033333",
+        guardianName: "Gita Adhikari",
+        guardianPhone: "9862033333",
+        relation: "Mother",
+        email: "gita.adhikari@shikshyakendra.edu.np",
+        userName: "Gita Adhikari",
+      },
+      {
+        surname: "Thapa",
+        fatherName: "Dipendra Thapa",
+        fatherPhone: "9861044444",
+        motherName: "Radhika Thapa",
+        motherPhone: "9862044444",
+        guardianName: "Dipendra Thapa",
+        guardianPhone: "9861044444",
+        relation: "Father",
+        email: "dipendra.thapa@shikshyakendra.edu.np",
+        userName: "Dipendra Thapa",
+      },
+      {
+        surname: "Joshi",
+        fatherName: "Manoj Joshi",
+        fatherPhone: "9861055555",
+        motherName: "Laxmi Joshi",
+        motherPhone: "9862055555",
+        guardianName: "Manoj Joshi",
+        guardianPhone: "9861055555",
+        relation: "Father",
+        email: "manoj.joshi@shikshyakendra.edu.np",
+        userName: "Manoj Joshi",
+      },
+      {
+        surname: "Karki",
+        fatherName: undefined,
+        fatherPhone: undefined,
+        motherName: "Nabina Karki",
+        motherPhone: "9862066666",
+        guardianName: "Nabina Karki",
+        guardianPhone: "9862066666",
+        relation: "Mother",
+        email: "nabina.karki@shikshyakendra.edu.np",
+        userName: "Nabina Karki",
+      },
+      {
+        surname: "Maharjan",
+        fatherName: "Suresh Maharjan",
+        fatherPhone: "9861077777",
+        motherName: "Bina Maharjan",
+        motherPhone: "9862077777",
+        guardianName: "Suresh Maharjan",
+        guardianPhone: "9861077777",
+        relation: "Father",
+        email: "suresh.maharjan@shikshyakendra.edu.np",
+        userName: "Suresh Maharjan",
+      },
+      {
+        surname: "Gurung",
+        fatherName: "Karma Gurung",
+        fatherPhone: "9861088888",
+        motherName: "Dolma Gurung",
+        motherPhone: "9862088888",
+        guardianName: "Karma Gurung",
+        guardianPhone: "9861088888",
+        relation: "Father",
+        email: "karma.gurung@shikshyakendra.edu.np",
+        userName: "Karma Gurung",
+      },
+      {
+        surname: "Rai",
+        fatherName: "Ashok Rai",
+        fatherPhone: "9861099999",
+        motherName: "Kalpana Rai",
+        motherPhone: "9862099999",
+        guardianName: "Ashok Rai",
+        guardianPhone: "9861099999",
+        relation: "Father",
+        email: "ashok.rai@shikshyakendra.edu.np",
+        userName: "Ashok Rai",
+      },
+      {
+        surname: "Khatri",
+        fatherName: "Prakash Khatri",
+        fatherPhone: "9861100000",
+        motherName: "Parvati Khatri",
+        motherPhone: "9862100000",
+        guardianName: "Hari Prasad Khatri",
+        guardianPhone: "9863100000",
+        relation: "Uncle",
+        email: "hari.khatri@shikshyakendra.edu.np",
+        userName: "Hari Prasad Khatri",
+      },
+      {
+        surname: "Dahal",
+        fatherName: "Bishnu Dahal",
+        fatherPhone: "9861111111",
+        motherName: "Maya Dahal",
+        motherPhone: "9862111111",
+        guardianName: "Bishnu Dahal",
+        guardianPhone: "9861111111",
+        relation: "Father",
+        email: "bishnu.dahal@shikshyakendra.edu.np",
+        userName: "Bishnu Dahal",
+      },
+      {
+        surname: "Devkota",
+        fatherName: "Homnath Devkota",
+        fatherPhone: "9861122222",
+        motherName: "Shanta Devkota",
+        motherPhone: "9862122222",
+        guardianName: "Homnath Devkota",
+        guardianPhone: "9861122222",
+        relation: "Father",
+        email: "homnath.devkota@shikshyakendra.edu.np",
+        userName: "Homnath Devkota",
+      },
+      {
+        surname: "Regmi",
+        fatherName: "Khemraj Regmi",
+        fatherPhone: "9861133333",
+        motherName: "Saraswati Regmi",
+        motherPhone: "9862133333",
+        guardianName: "Khemraj Regmi",
+        guardianPhone: "9861133333",
+        relation: "Father",
+        email: "khemraj.regmi@shikshyakendra.edu.np",
+        userName: "Khemraj Regmi",
+      },
+      {
+        surname: "Neupane",
+        fatherName: "Krishna Neupane",
+        fatherPhone: "9861144444",
+        motherName: "Kamala Neupane",
+        motherPhone: "9862144444",
+        guardianName: "Krishna Neupane",
+        guardianPhone: "9861144444",
+        relation: "Father",
+        email: "krishna.neupane@shikshyakendra.edu.np",
+        userName: "Krishna Neupane",
+      },
+      {
+        surname: "Ghimire",
+        fatherName: "Narayan Ghimire",
+        fatherPhone: "9861155555",
+        motherName: "Menuka Ghimire",
+        motherPhone: "9862155555",
+        guardianName: "Narayan Ghimire",
+        guardianPhone: "9861155555",
+        relation: "Father",
+        email: "narayan.ghimire@shikshyakendra.edu.np",
+        userName: "Narayan Ghimire",
+      },
+      {
+        surname: "Bhattarai",
+        fatherName: "Madhav Bhattarai",
+        fatherPhone: "9861166666",
+        motherName: "Anita Bhattarai",
+        motherPhone: "9862166666",
+        guardianName: "Madhav Bhattarai",
+        guardianPhone: "9861166666",
+        relation: "Father",
+        email: "madhav.bhattarai@shikshyakendra.edu.np",
+        userName: "Madhav Bhattarai",
+      },
+      {
+        surname: "KC",
+        fatherName: "Janak KC",
+        fatherPhone: "9861177777",
+        motherName: "Srijana KC",
+        motherPhone: "9862177777",
+        guardianName: "Janak KC",
+        guardianPhone: "9861177777",
+        relation: "Father",
+        email: "janak.kc@shikshyakendra.edu.np",
+        userName: "Janak KC",
+      },
+      {
+        surname: "Subedi",
+        fatherName: "Hari Subedi",
+        fatherPhone: "9861188888",
+        motherName: "Nirmala Subedi",
+        motherPhone: "9862188888",
+        guardianName: "Nirmala Subedi",
+        guardianPhone: "9862188888",
+        relation: "Mother",
+        email: "nirmala.subedi@shikshyakendra.edu.np",
+        userName: "Nirmala Subedi",
+      },
+      {
+        surname: "Gautam",
+        fatherName: "Balaram Gautam",
+        fatherPhone: "9861199999",
+        motherName: "Bhagawati Gautam",
+        motherPhone: "9862199999",
+        guardianName: "Balaram Gautam",
+        guardianPhone: "9861199999",
+        relation: "Father",
+        email: "balaram.gautam@shikshyakendra.edu.np",
+        userName: "Balaram Gautam",
+      },
+      {
+        surname: "Poudel",
+        fatherName: "Ganesh Poudel",
+        fatherPhone: "9861200000",
+        motherName: "Suntali Poudel",
+        motherPhone: "9862200000",
+        guardianName: "Ganesh Poudel",
+        guardianPhone: "9861200000",
+        relation: "Father",
+        email: "ganesh.poudel@shikshyakendra.edu.np",
+        userName: "Ganesh Poudel",
+      },
+    ];
+
+    // Pools of Authentic Given Names for Boys and Girls (50 each)
+    const boyFirstNames = [
+      "Aarav", "Rohan", "Ayush", "Saugat", "Bikram", "Prabin", "Samir", "Bibek", "Sujan", "Nishan",
+      "Prashant", "Anish", "Sahil", "Roshan", "Kshitiz", "Dipesh", "Subash", "Manish", "Sabin", "Saujan",
+      "Aayush", "Siddharth", "Rehan", "Niraj", "Milan", "Nischal", "Jenish", "Suraj", "Abhishek", "Rahul",
+      "Saroj", "Rabin", "Ashish", "Dipendra", "Shishir", "Bishal", "Sandesh", "Sugam", "Rohit", "Saurav",
+      "Rajan", "Hemant", "Pawan", "Kiran", "Bipin", "Prakash", "Sundar", "Dinesh", "Kamal", "Rupesh",
+    ];
+
+    const girlFirstNames = [
+      "Aaradhya", "Puja", "Shreya", "Sneha", "Samriddhi", "Pragya", "Anusha", "Kriti", "Smriti", "Bina",
+      "Ritu", "Anjali", "Nisha", "Priya", "Sushma", "Dikshya", "Archana", "Roshni", "Salina", "Manisha",
+      "Prasansha", "Karuna", "Ashika", "Asmita", "Deepika", "Isha", "Kristina", "Alisha", "Kabita", "Rashmi",
+      "Bipana", "Sabina", "Swastika", "Upasana", "Menuka", "Rachana", "Priyanka", "Swechha", "Rejina", "Subeksha",
+      "Aakriti", "Bhawana", "Niru", "Sujata", "Pooja", "Aasha", "Kabita", "Pratima", "Reena", "Simran",
+    ];
+
+    const kathmanduAddresses = [
+      "Lazimpat, Kathmandu", "New Baneshwor, Kathmandu", "Baluwatar, Kathmandu", "Jhamsikhel, Lalitpur",
+      "Koteshwor, Kathmandu", "Sanepa, Lalitpur", "Chabahil, Kathmandu", "Maharajgunj, Kathmandu",
+      "Thamel, Kathmandu", "Hattisar, Kathmandu", "Naxal, Kathmandu", "Tinkune, Kathmandu",
+      "Kalanki, Kathmandu", "Dillibazar, Kathmandu", "Bhatbhateni, Kathmandu", "Samakhusi, Kathmandu",
+      "Kumaripati, Lalitpur", "Jawalakhel, Lalitpur", "Suryabinayak, Bhaktapur", "Thimi, Bhaktapur",
+    ];
+
     console.log("Creating Parent Users...");
     const parentUsers: any[] = [];
-    for (let i = 1; i <= 20; i++) {
+    for (let i = 0; i < families.length; i++) {
+      const fam = families[i]!;
       const pUser = await new User({
-        name: `Parent Num_${i}`,
-        email: `parent${i}@shikshyakendra.edu.np`,
+        name: fam.userName,
+        email: fam.email,
         password: hashedPassword,
         role: "parent",
         is_active: true,
@@ -241,15 +511,16 @@ const seedSchool = async () => {
     console.log("Creating Parent records...");
     const parentDocs: any[] = [];
     for (let i = 0; i < parentUsers.length; i++) {
+      const fam = families[i]!;
       const parentDoc = await new Parent({
-        fatherName: i % 3 !== 0 ? `Father Num_${i + 1}` : undefined,
-        fatherPhone: i % 3 !== 0 ? `9861000${(i + 1).toString().padStart(2, "0")}` : undefined,
-        motherName: i % 3 !== 2 ? `Mother Num_${i + 1}` : undefined,
-        motherPhone: i % 3 !== 2 ? `9862000${(i + 1).toString().padStart(2, "0")}` : undefined,
-        guardianName: i % 3 === 0 ? `Guardian Num_${i + 1}` : undefined,
-        guardianPhone: i % 3 === 0 ? `9863000${(i + 1).toString().padStart(2, "0")}` : undefined,
-        relation: i % 3 === 0 ? "Uncle" : undefined,
-        primarygurdianemail: `parent${i + 1}@shikshyakendra.edu.np`,
+        fatherName: fam.fatherName,
+        fatherPhone: fam.fatherPhone,
+        motherName: fam.motherName,
+        motherPhone: fam.motherPhone,
+        guardianName: fam.guardianName,
+        guardianPhone: fam.guardianPhone,
+        relation: fam.relation,
+        primarygurdianemail: fam.email,
         userId: parentUsers[i]._id,
       }).save();
       parentDocs.push(parentDoc);
@@ -270,33 +541,44 @@ const seedSchool = async () => {
         for (let sNum = 1; sNum <= 5; sNum++) {
           const idx = studentCounter;
           const parentIdx = idx % parentUsers.length;
+          const family = families[parentIdx]!;
+
+          const isMale = idx % 2 === 0;
+          const gender = isMale ? "Male" : "Female";
+          const nameIndex = Math.floor(idx / 2);
+          const firstName = isMale ? boyFirstNames[nameIndex]! : girlFirstNames[nameIndex]!;
+          const studentFullName = `${firstName} ${family.surname}`;
+          const studentEmail = `${firstName.toLowerCase()}.${family.surname.toLowerCase()}@shikshyakendra.edu.np`;
+          const address = kathmanduAddresses[idx % kathmanduAddresses.length]!;
 
           const studentUser = await new User({
-            name: `Student Num_${idx + 1}`,
-            email: `student${idx + 1}@shikshyakendra.edu.np`,
+            name: studentFullName,
+            email: studentEmail,
             password: hashedPassword,
             role: "student",
             is_active: true,
           }).save();
           studentUsers.push(studentUser);
 
-          const minDate = new Date("2012-01-01").getTime();
-          const maxDate = new Date("2018-12-31").getTime();
-          const randomDob = new Date(minDate + Math.random() * (maxDate - minDate));
+          // Calculate age based on Class level (Class 1: ~6 yrs old born ~2020, Class 10: ~15 yrs old born ~2011)
+          const birthYear = 2020 - cIdx;
+          const birthMonth = (idx % 12 + 1).toString().padStart(2, "0");
+          const birthDay = (idx % 28 + 1).toString().padStart(2, "0");
+          const studentDob = new Date(`${birthYear}-${birthMonth}-${birthDay}`);
 
           const student = await new Student({
             admissionNumber: `ADM-${(idx + 10001).toString()}`,
-            studentName: `Student Num_${idx + 1}`,
-            address: "Kathmandu",
-            gender: idx % 2 === 0 ? "Male" : "Female",
-            contact: `9821000${idx.toString().padStart(3, "0")}`,
-            dob: randomDob,
-            student_email: `student${idx + 1}@shikshyakendra.edu.np`,
+            studentName: studentFullName,
+            address: address,
+            gender: gender,
+            contact: `98210${(idx + 1000).toString().padStart(4, "0")}`,
+            dob: studentDob,
+            student_email: studentEmail,
             schoolId: school._id,
             userId: studentUser._id,
             status: "active",
             parentId: parentDocs[parentIdx]._id,
-            healthInfo: { bloodGroup: ["O+", "A+", "B+", "AB+"][idx % 4] },
+            healthInfo: { bloodGroup: ["O+", "A+", "B+", "AB+", "O-"][idx % 5] },
           }).save();
 
           await new StudentEnrollment({

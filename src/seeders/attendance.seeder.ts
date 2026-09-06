@@ -61,19 +61,19 @@ export const seedAttendance = async () => {
 
         if (enrollments.length === 0) continue;
 
-        // Categorize students into realistic risk profiles for demo/test
-        // Index 0: Active Consecutive Absence Streak Student (3-5 days absent up to today)
-        // Index 1: Warning Deficit Student (~65% attendance rate)
-        // Index 2+: Healthy Students (90-95% attendance rate)
-        const streakStudentId = enrollments[0]?.studentId?.toString();
-        const warningStudentId = enrollments.length > 1 ? enrollments[1]?.studentId?.toString() : undefined;
+        // Structured Human Flow & Attendance Risk Profiles per Section (Roll 1 to 5):
+        // Roll 1 (Index 0): Star Attendee (98-100% attendance, punctual)
+        // Roll 2 (Index 1): Regular Performer (92-94% attendance, occasional sick leave)
+        // Roll 3 (Index 2): Active Streak Absentee (Absent last 4 school days up to today - High Risk Flag)
+        // Roll 4 (Index 3): Chronic Deficit Student (60-65% attendance - Attendance Deficit Warning)
+        // Roll 5 (Index 4): Health Leave & Half-Day Student (82-86% attendance, medical checkups)
 
         for (let dayOffset = totalDaysToSeed - 1; dayOffset >= 0; dayOffset--) {
           const attendanceDate = new Date(now);
           attendanceDate.setDate(now.getDate() - dayOffset);
           attendanceDate.setUTCHours(0, 0, 0, 0);
 
-          // Skip weekends (Saturday & Sunday in standard academic calendar, or Sunday only)
+          // Skip weekends (Sundays in standard academic calendar)
           const dayOfWeek = attendanceDate.getDay();
           if (dayOfWeek === 0) continue; // Skip Sundays
 
@@ -82,36 +82,78 @@ export const seedAttendance = async () => {
             let status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' = 'PRESENT';
             let remarks = "";
 
-            if (studentId.toString() === streakStudentId) {
-              // Streak Student: Absent for the last 4 school days up to today
+            if (studentIndex === 0) {
+              // Roll 1: Top Attendee (98-100% presence)
+              if (dayOffset % 15 === 0) {
+                status = 'LATE';
+                remarks = "Traffic congestion at Lazimpat";
+              } else {
+                status = 'PRESENT';
+                remarks = "";
+              }
+            } else if (studentIndex === 1) {
+              // Roll 2: Good Performer (92-94% presence)
+              if (dayOffset === 12 || dayOffset === 25) {
+                status = 'ABSENT';
+                remarks = "Parent informed sickness - High fever";
+              } else if (dayOffset % 9 === 0) {
+                status = 'LATE';
+                remarks = "School van delayed";
+              } else {
+                status = 'PRESENT';
+                remarks = "";
+              }
+            } else if (studentIndex === 2) {
+              // Roll 3: Active Streak Absentee (Absent last 4 school days up to today)
               if (dayOffset <= 4) {
                 status = 'ABSENT';
                 remarks = `Unexcused absence - Day ${5 - dayOffset} of active streak`;
+              } else if (dayOffset % 6 === 0) {
+                status = 'ABSENT';
+                remarks = "Unexcused absence - Parent unreachable";
               } else {
-                status = (dayOffset % 5 === 0) ? 'ABSENT' : 'PRESENT';
+                status = 'PRESENT';
+                remarks = "";
               }
-            } else if (warningStudentId && studentId.toString() === warningStudentId) {
-              // Warning Deficit Student: Absent roughly 1 in every 3 days (~65% rate)
+            } else if (studentIndex === 3) {
+              // Roll 4: Chronic Deficit Student (~62% presence - Warning Deficit)
               if (dayOffset % 3 === 0) {
                 status = 'ABSENT';
-                remarks = "Frequent absence logged";
+                remarks = "Unexcused absence logged";
               } else if (dayOffset % 7 === 0) {
-                status = 'HALF_DAY';
-                remarks = "Left early for medical appointment";
+                status = 'LATE';
+                remarks = "Missed morning assembly";
               } else {
                 status = 'PRESENT';
+                remarks = "";
+              }
+            } else if (studentIndex === 4) {
+              // Roll 5: Health Leave / Half-Day Student (~84% presence)
+              if (dayOffset % 8 === 0) {
+                status = 'HALF_DAY';
+                remarks = "Left early - Dental appointment";
+              } else if (dayOffset % 11 === 0) {
+                status = 'ABSENT';
+                remarks = "Doctor advised bed rest - Migraine";
+              } else {
+                status = 'PRESENT';
+                remarks = "";
               }
             } else {
-              // Healthy Student: 92% Present, 5% Late, 3% Absent
+              // Fallback for roll numbers 6+
               const rand = (studentIndex * 17 + dayOffset * 31) % 100;
-              if (rand < 3) {
+              if (rand < 4) {
                 status = 'ABSENT';
                 remarks = "Parent informed sickness";
-              } else if (rand < 8) {
+              } else if (rand < 9) {
                 status = 'LATE';
-                remarks = "School bus delayed";
+                remarks = "Heavy morning rain";
+              } else if (rand < 13) {
+                status = 'HALF_DAY';
+                remarks = "Family medical emergency";
               } else {
                 status = 'PRESENT';
+                remarks = "";
               }
             }
 
