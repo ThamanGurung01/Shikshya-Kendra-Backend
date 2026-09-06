@@ -527,9 +527,10 @@ export const getAttendanceAnalyticsService = async (
       if (r.status === 'PRESENT' || r.status === 'LATE') presentInDoc += 1;
       else if (r.status === 'HALF_DAY') presentInDoc += 0.5;
     });
+    const existing = dateMap.get(dateStr) || { totalPresent: 0, totalStudents: 0 };
     dateMap.set(dateStr, {
-      totalPresent: presentInDoc,
-      totalStudents: doc.records.length
+      totalPresent: existing.totalPresent + presentInDoc,
+      totalStudents: existing.totalStudents + doc.records.length
     });
   });
 
