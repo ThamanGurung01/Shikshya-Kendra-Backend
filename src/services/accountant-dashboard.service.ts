@@ -194,16 +194,40 @@ export const getDashboardCharts = async (
   if (hasDateFilter) invoiceQuery.paymentDate = dateFilter;
 
   // 1. 12-Month Nepali Trend
-  const allIncomes = await Income.find(incomeQuery).lean();
-  const allExpenses = await Expense.find(expenseQuery).lean();
+  // For the annual 12-month trend, query the active academic year (or rolling 12 months)
+  // so that a short date filter (e.g. 7-day or 30-day KPI filter) doesn't zero out 11 months of the timeline.
+  let trendStartDate: Date;
+  let trendEndDate: Date;
+
+  const currentAcademicYear = await AcademicYear.findOne({ schoolId: schoolObjId, isCurrent: true });
+  if (currentAcademicYear?.startDate && currentAcademicYear?.endDate) {
+    trendStartDate = new Date(currentAcademicYear.startDate);
+    trendEndDate = new Date(currentAcademicYear.endDate);
+  } else {
+    trendEndDate = new Date();
+    trendStartDate = new Date();
+    trendStartDate.setFullYear(trendEndDate.getFullYear() - 1);
+  }
+
+  const annualIncomes = await Income.find({
+    schoolId: schoolObjId,
+    deletedAt: null,
+    date: { $gte: trendStartDate, $lte: trendEndDate },
+  }).lean();
+
+  const annualExpenses = await Expense.find({
+    schoolId: schoolObjId,
+    deletedAt: null,
+    date: { $gte: trendStartDate, $lte: trendEndDate },
+  }).lean();
 
   const monthlyTrend = NEPALI_MONTHS.map((m, idx) => {
     // Map Gregorian dates proportionally to Nepali calendar for visualization
-    const monthIncomes = allIncomes.filter((inc) => {
+    const monthIncomes = annualIncomes.filter((inc) => {
       const d = new Date(inc.date);
       return (d.getMonth() + 9) % 12 + 1 === m.index;
     });
-    const monthExpenses = allExpenses.filter((exp) => {
+    const monthExpenses = annualExpenses.filter((exp) => {
       const d = new Date(exp.date);
       return (d.getMonth() + 9) % 12 + 1 === m.index;
     });
@@ -366,19 +390,44 @@ export const getFinancialForecast = async (
 ) => {
   const schoolObjId = new Types.ObjectId(schoolId);
 
-  const monthLabels: string[] = [];
-  const monthStartDates: Date[] = [];
+  interface MonthSlot {
+    date: Date;
+    gregorianLabel: string;
+    nepaliName: string;
+    bsYear: number;
+    monthIndex: number;
+    displayLabel: string;
+  }
 
+  const getNepaliInfo = (d: Date) => {
+    const nepIndex = ((d.getMonth() + 9) % 12) + 1;
+    const nepMonth = NEPALI_MONTHS.find((m) => m.index === nepIndex) || NEPALI_MONTHS[0]!;
+    const bsYear = d.getMonth() >= 3 ? d.getFullYear() + 57 : d.getFullYear() + 56;
+    return {
+      name: nepMonth.name,
+      index: nepIndex,
+      bsYear,
+    };
+  };
+
+  const historySlots: MonthSlot[] = [];
   for (let i = historyMonths - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(1);
     d.setHours(0, 0, 0, 0);
     d.setMonth(d.getMonth() - i);
-    monthStartDates.push(new Date(d));
-    monthLabels.push(d.toLocaleString("en-US", { month: "short", year: "numeric" }));
+    const nep = getNepaliInfo(d);
+    historySlots.push({
+      date: new Date(d),
+      gregorianLabel: d.toLocaleString("en-US", { month: "short", year: "numeric" }),
+      nepaliName: nep.name,
+      bsYear: nep.bsYear,
+      monthIndex: nep.index,
+      displayLabel: nep.name,
+    });
   }
 
-  const startBoundary = monthStartDates[0]!;
+  const startBoundary = historySlots[0]!.date;
 
   const incomeAgg = await Income.aggregate([
     { $match: { schoolId: schoolObjId, deletedAt: null, date: { $gte: startBoundary } } },
@@ -399,8 +448,8 @@ export const getFinancialForecast = async (
   const incomeSeries: number[] = [];
   const expenseSeries: number[] = [];
 
-  monthStartDates.forEach((d) => {
-    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+  historySlots.forEach((slot) => {
+    const key = `${slot.date.getFullYear()}-${slot.date.getMonth() + 1}`;
     incomeSeries.push(incomeMap.get(key) ?? 0);
     expenseSeries.push(expenseMap.get(key) ?? 0);
   });
@@ -408,35 +457,74 @@ export const getFinancialForecast = async (
   const incomeResult  = holtDoubleSmoothing(incomeSeries,  forecastMonths);
   const expenseResult = holtDoubleSmoothing(expenseSeries, forecastMonths);
 
-  const forecastLabels: string[] = [];
+  const forecastSlots: MonthSlot[] = [];
   for (let i = 1; i <= forecastMonths; i++) {
     const d = new Date();
     d.setDate(1);
+    d.setHours(0, 0, 0, 0);
     d.setMonth(d.getMonth() + i);
-    forecastLabels.push(d.toLocaleString("en-US", { month: "short", year: "numeric" }));
+    const nep = getNepaliInfo(d);
+    forecastSlots.push({
+      date: new Date(d),
+      gregorianLabel: d.toLocaleString("en-US", { month: "short", year: "numeric" }),
+      nepaliName: nep.name,
+      bsYear: nep.bsYear,
+      monthIndex: nep.index,
+      displayLabel: nep.name,
+    });
   }
 
-  const allLabels = [...monthLabels, ...forecastLabels];
+  const allSlots = [...historySlots, ...forecastSlots];
+  const lastActualIdx = historySlots.length - 1;
 
-  const chartData = allLabels.map((label, idx) => {
+  // Format display labels: if duplicate nepali names exist in the series, disambiguate with short BS year
+  const nameCounts = new Map<string, number>();
+  allSlots.forEach((s) => {
+    nameCounts.set(s.nepaliName, (nameCounts.get(s.nepaliName) || 0) + 1);
+  });
+  allSlots.forEach((s) => {
+    if ((nameCounts.get(s.nepaliName) || 0) > 1) {
+      s.displayLabel = `${s.nepaliName} '${String(s.bsYear).slice(-2)}`;
+    }
+  });
+
+  const chartData = allSlots.map((slot, idx) => {
     const ip = incomeResult.points[idx];
     const ep = expenseResult.points[idx];
+    const isForecast = idx > lastActualIdx;
+    const isBridge = idx === lastActualIdx;
+
     return {
-      month: label,
-      isForecast: ip?.isForecast ?? false,
+      month: slot.displayLabel,
+      nepaliMonth: slot.nepaliName,
+      gregorianMonth: slot.gregorianLabel,
+      bsYear: slot.bsYear,
+      isForecast,
       income: {
-        actual:   ip?.isForecast ? null : (ip?.actual ?? null),
-        forecast: ip?.forecast ?? null,
-        upper:    ip?.upper ?? null,
-        lower:    ip?.lower ?? null,
+        actual: !isForecast ? (incomeSeries[idx] ?? 0) : null,
+        // Seamless bridge: forecast curve begins at the last actual point
+        forecast: isBridge
+          ? (incomeSeries[idx] ?? 0)
+          : isForecast
+          ? (ip?.forecast ?? null)
+          : null,
+        upper: isForecast ? (ip?.upper ?? null) : null,
+        lower: isForecast ? (ip?.lower ?? null) : null,
       },
       expense: {
-        actual:   ep?.isForecast ? null : (ep?.actual ?? null),
-        forecast: ep?.forecast ?? null,
-        upper:    ep?.upper ?? null,
-        lower:    ep?.lower ?? null,
+        actual: !isForecast ? (expenseSeries[idx] ?? 0) : null,
+        // Seamless bridge: forecast curve begins at the last actual point
+        forecast: isBridge
+          ? (expenseSeries[idx] ?? 0)
+          : isForecast
+          ? (ep?.forecast ?? null)
+          : null,
+        upper: isForecast ? (ep?.upper ?? null) : null,
+        lower: isForecast ? (ep?.lower ?? null) : null,
       },
-      netForecast: (ip?.forecast ?? 0) - (ep?.forecast ?? 0),
+      netForecast: isForecast
+        ? (ip?.forecast ?? 0) - (ep?.forecast ?? 0)
+        : (incomeSeries[idx] ?? 0) - (expenseSeries[idx] ?? 0),
     };
   });
 
