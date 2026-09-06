@@ -67,11 +67,11 @@ export async function calculateWlmScores(
   // 1. Load weights (fall back to defaults if no config)
   const config = await WlmConfig.findOne({ schoolId }).lean();
   const weights = {
-    exam: config?.examWeight ?? 0.45,
-    attendance: config?.attendanceWeight ?? 0.20,
+    exam: config?.examWeight ?? 0.60,
+    attendance: config?.attendanceWeight ?? 0.25,
     assignment: config?.assignmentWeight ?? 0.15,
-    conduct: config?.conductWeight ?? 0.10,
-    punctuality: config?.punctualityWeight ?? 0.10,
+    conduct: config?.conductWeight ?? 0,
+    punctuality: config?.punctualityWeight ?? 0,
   };
 
   // 2. Load academic year dates
@@ -304,11 +304,11 @@ export async function getWlmConfig(schoolId: string) {
   if (!config) {
     return {
       schoolId,
-      examWeight: 0.45,
-      attendanceWeight: 0.20,
+      examWeight: 0.60,
+      attendanceWeight: 0.25,
       assignmentWeight: 0.15,
-      conductWeight: 0.10,
-      punctualityWeight: 0.10,
+      conductWeight: 0,
+      punctualityWeight: 0,
     };
   }
   return config;
