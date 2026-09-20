@@ -17,7 +17,6 @@ const PORT = process.env.PORT || 8000;
 
 const startServer = async () => {
   try {
-    await connectDB();
     const httpServer = createServer(app);
     initSocketServer(httpServer);
     httpServer.listen(PORT, () => {
@@ -27,9 +26,12 @@ const startServer = async () => {
         console.log(`Server running on port ${PORT}`);
       }
     });
+    console.log('Connecting to MongoDB...');
+    await connectDB();
+    console.log('MongoDB connected successfully!');
   } catch (error) {
     console.error('Server Start Error:', error);
   }
 };
 
-startServer();
+startServer();
