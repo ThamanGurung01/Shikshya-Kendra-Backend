@@ -1,6 +1,7 @@
 # Shikshya Kendra Backend
 
 Backend for the Shikshya Kendra project, built with Express, TypeScript, and MongoDB.
+Shikshya Kendra is a School Management System to manage and operate all the school operations easily and effectively.
 
 ## Features
 
