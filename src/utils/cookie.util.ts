@@ -5,7 +5,7 @@ if(refreshToken){
     res.cookie('refreshToken',refreshToken,{
         httpOnly:true,
         secure:NodeEnvironment,
-        sameSite:NodeEnvironment?'strict':'lax',
+        sameSite:NodeEnvironment?'none':'lax',
         maxAge:7*24*60*60*1000,
     })
 }
@@ -13,7 +13,7 @@ if(token){
     res.cookie('accessToken',token,{
         httpOnly:true,
         secure:NodeEnvironment,
-        sameSite:NodeEnvironment?'strict':'lax',
+        sameSite:NodeEnvironment?'none':'lax',
         maxAge:15*60*1000,
     })
 }
